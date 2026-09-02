@@ -174,7 +174,7 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
 
   if (pathname === '/api/requests' && req.method === 'GET') {
     const requestStore = new RequestStore(dataDir)
-    const requests = requestStore.all()
+    const requests = await requestStore.all()
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify(requests))
     return
@@ -185,7 +185,7 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
   if (pathname === '/api/requests' && req.method === 'POST') {
     let body = ''
     req.on('data', chunk => { body += chunk })
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}')
         const requesting = typeof payload.requesting_agent_id === 'string' ? payload.requesting_agent_id.trim() : ''
@@ -198,7 +198,7 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
           return
         }
         const requestStore = new RequestStore(dataDir)
-        const created = requestStore.createRequest(
+        const created = await requestStore.createRequest(
           requesting,
           treasury,
           amount,
@@ -220,13 +220,13 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
     const requestId = pathname.slice('/api/requests/'.length)
     let body = ''
     req.on('data', chunk => { body += chunk })
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}')
         const requestStore = new RequestStore(dataDir)
 
         if (payload.settled === true) {
-          const settled = requestStore.markSettled(requestId)
+          const settled = await requestStore.markSettled(requestId)
           if (!settled) {
             res.writeHead(404, { 'Content-Type': 'application/json' })
             res.end(JSON.stringify({ error: 'request not found' }))
@@ -243,7 +243,7 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
           res.end(JSON.stringify({ error: "status must be 'approved' or 'rejected'" }))
           return
         }
-        const updated = requestStore.updateStatus(requestId, status, {
+        const updated = await requestStore.updateStatus(requestId, status, {
           tx_hash: typeof payload.tx_hash === 'string' ? payload.tx_hash : undefined,
           rejection_reason: typeof payload.rejection_reason === 'string' ? payload.rejection_reason : undefined
         })
