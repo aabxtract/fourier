@@ -237,6 +237,9 @@ document.addEventListener('DOMContentLoaded', () => {
       ])
 
       if (statusRes.status === 401 || eventsRes.status === 401) return handle401()
+      // Server isn't asking for a token (anymore) — never keep the overlay up.
+      $('authOverlay').hidden = true
+      $('authError').hidden = true
 
       if (statusRes.ok) {
         latestStatus = await statusRes.json()
