@@ -1,59 +1,14 @@
 // ============================================================
-// Fourier Operational Dashboard Application Logic
+// Fourier Operational Dashboard — app logic
+// Pages: Overview · Simulation · Delegation · Memory · Policy Studio
+// All store-derived strings are HTML-escaped before rendering.
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Navigation Tabs
-  const tabBtns = document.querySelectorAll('.tab-btn')
-  const tabPanes = document.querySelectorAll('.tab-pane')
+  const $ = id => document.getElementById(id)
 
-  tabBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      tabBtns.forEach(b => b.classList.remove('active'))
-      tabPanes.forEach(p => p.classList.remove('active'))
+  // ---------- utilities ----------
 
-      btn.classList.add('active')
-      const targetId = `tab-${btn.dataset.tab}`
-      document.getElementById(targetId)?.classList.add('active')
-    })
-  })
-
-  // State Fetching & UI Rendering
-  async function refreshDashboard() {
-    try {
-      // 1. Fetch Status
-      const statusRes = await fetch('/api/status')
-      if (statusRes.ok) {
-        const data = await statusRes.json()
-        renderStatus(data)
-      }
-
-      // 2. Fetch Events
-      const eventsRes = await fetch('/api/events?limit=20')
-      if (eventsRes.ok) {
-        const events = await eventsRes.json()
-        renderEvents(events)
-      }
-
-      // 3. Fetch Memory
-      const memRes = await fetch('/api/memory')
-      if (memRes.ok) {
-        const memory = await memRes.json()
-        renderMemory(memory)
-      }
-
-      // 4. Fetch Delegation Requests
-      const reqRes = await fetch('/api/requests')
-      if (reqRes.ok) {
-        const requests = await reqRes.json()
-        renderRequests(requests)
-      }
-    } catch (err) {
-      console.error('Failed to refresh dashboard telemetry:', err)
-    }
-  }
-
-  // HTML-escape any store-derived string before it enters the DOM
   function esc(value) {
     return String(value ?? '')
       .replace(/&/g, '&amp;')
@@ -63,245 +18,491 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/'/g, '&#39;')
   }
 
-  function dotClass(state) {
-    return state === 'healthy' || state === 'configured' ? 'dot-green' : 'dot-red'
+  function num(value, digits = 1) {
+    return typeof value === 'number' && isFinite(value) ? value.toFixed(digits) : '–'
   }
 
-  function renderHealth(health) {
-    const grid = document.getElementById('subsystemsGrid')
-    if (!grid || !health) return
-
-    const sourceLabel = health.lastEventSource === 'live'
-      ? 'Live (Synapse SDK)'
-      : health.lastEventSource === 'scenario'
-      ? 'Scenario fixture'
-      : 'Demo fixture (no wallet configured)'
-
-    const items = [
-      { label: 'Watcher / Filecoin Read', state: health.watcher, detail: health.lastEventAt ? `Last event ${new Date(health.lastEventAt).toLocaleTimeString()}` : 'No events yet' },
-      { label: 'Data Source', state: health.lastEventSource === 'live' ? 'healthy' : 'stale', detail: sourceLabel },
-      { label: 'AI Provider', state: 'healthy', detail: String(health.aiProvider || '--').toUpperCase() },
-      { label: 'Guardrails', state: 'healthy', detail: health.guardrails === 'active' ? 'Armed' : health.guardrails },
-      { label: 'Telegram', state: health.channels?.telegram === 'configured' ? 'configured' : 'not configured', detail: health.channels?.telegram === 'configured' ? 'Configured' : 'Not configured' },
-      { label: 'Discord', state: health.channels?.discord === 'configured' ? 'configured' : 'not configured', detail: health.channels?.discord === 'configured' ? 'Webhook configured' : 'Not configured' },
-      { label: 'Event Sync', state: 'healthy', detail: health.sync?.mode === 'remote-mirror' ? `Remote mirror (${health.sync.pending} pending)` : 'Local-only (self-hosted)' },
-      { label: 'Delegation', state: 'healthy', detail: `${health.delegation?.role || 'standalone'} · ${health.delegation?.coordination || 'local'} · ${health.delegation?.pendingRequests ?? 0} pending` }
-    ]
-
-    grid.innerHTML = items.map(item => `
-      <div class="subsystem-item"><span class="${dotClass(item.state)}"></span> <strong>${esc(item.label)}:</strong> ${esc(item.detail)}</div>
-    `).join('')
+  function time(iso) {
+    const d = new Date(iso)
+    return isNaN(d) ? '–' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
 
-  function renderStatus(data) {
-    const { config, policy, latestEvent, health } = data
-
-    document.getElementById('netLabel').textContent = config.network === 'calibration' ? 'Calibration' : 'Mainnet'
-    document.getElementById('roleLabel').textContent = config.role ? config.role.toUpperCase() : 'STANDALONE'
-    document.getElementById('providerLabel').textContent = config.model.provider.toUpperCase()
-    document.getElementById('delRole').textContent = config.role.toUpperCase()
-    document.getElementById('delTreasury').textContent = config.treasuryAgentId || 'treasury-main'
-
-    if (latestEvent) {
-      const state = latestEvent.state
-      document.getElementById('metricRunway').textContent = state.runwayDays.toFixed(1)
-      document.getElementById('metricAvailable').textContent = state.availableUSDFC.toFixed(2)
-      document.getElementById('metricLocked').textContent = state.lockedUSDFC.toFixed(2)
-
-      const rate = state.spendRateUSDFCPerDay !== null ? state.spendRateUSDFCPerDay.toFixed(2) : '--'
-      document.getElementById('metricSpendRate').textContent = rate
-
-      // Runway status
-      const runwayBadge = document.getElementById('runwayStatusBadge')
-      const runwayBar = document.getElementById('runwayBarFill')
-      if (state.runwayDays <= policy.actionRunwayDays) {
-        runwayBadge.textContent = 'CRITICAL'
-        runwayBadge.className = 'metric-sub badge-danger'
-        runwayBar.style.width = '20%'
-      } else if (state.runwayDays <= policy.warningRunwayDays) {
-        runwayBadge.textContent = 'WARNING'
-        runwayBadge.className = 'metric-sub badge-warning'
-        runwayBar.style.width = '45%'
-      } else {
-        runwayBadge.textContent = 'HEALTHY'
-        runwayBadge.className = 'metric-sub'
-        runwayBar.style.width = '85%'
-      }
-
-      // Latest decision diff
-      document.getElementById('latestActionBadge').textContent = latestEvent.decision.action
-      document.getElementById('diffProposal').textContent = JSON.stringify(latestEvent.proposal, null, 2)
-      document.getElementById('diffExecution').textContent = JSON.stringify(latestEvent.execution, null, 2)
-      document.getElementById('lastObservedTime').textContent = `Last check: ${new Date(latestEvent.recordedAt).toLocaleTimeString()} · ${latestEvent.state?.source === 'live' ? 'live' : latestEvent.state?.source === 'scenario' ? 'scenario' : 'demo fixture'}`
-    }
-
-    // Render honest subsystem health + policy-derived invariants
-    renderHealth(health)
-    const invClamp = document.getElementById('invTopUpClamp')
-    if (invClamp) invClamp.textContent = policy.topUpEnabled ? `Active (${policy.maxAutoTopUpUSDFC} USDFC max)` : 'Disabled'
+  function api(path, options = {}) {
+    const token = sessionStorage.getItem('fourierToken')
+    const headers = { ...(options.headers || {}) }
+    if (token) headers.Authorization = `Bearer ${token}`
+    return fetch(path, { ...options, headers })
   }
 
-  function renderEvents(events) {
-    const tbody = document.getElementById('eventsTableBody')
-    if (!events || events.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No audit events recorded yet.</td></tr>'
-      return
-    }
-
-    tbody.innerHTML = events.map(e => `
-      <tr>
-        <td>${esc(new Date(e.recordedAt).toLocaleTimeString())}</td>
-        <td><span class="badge ${e.mode === 'live' ? 'badge-success' : 'badge-sim'}">${esc((e.mode || '').toUpperCase())}</span></td>
-        <td><strong>${esc(e.state?.runwayDays?.toFixed(1) ?? '--')}d</strong></td>
-        <td>${esc(e.state?.availableUSDFC?.toFixed(2) ?? '--')} USDFC</td>
-        <td><code>${esc(e.proposal?.action ?? 'HOLD')}</code></td>
-        <td><span class="badge ${e.guardrail?.status === 'allow' ? 'badge-success' : e.guardrail?.status === 'approval_required' ? 'badge-warning' : 'badge-outline'}">${esc(e.guardrail?.status ?? 'allow')}</span></td>
-        <td><span style="font-size:0.8rem;">${esc(e.execution?.summary ?? 'No action')}</span></td>
-      </tr>
-    `).join('')
-
-    // Render trend chart bars
-    const chartBars = document.getElementById('overviewChartBars')
-    if (chartBars && events.length > 0) {
-      const recentEvents = [...events].reverse().slice(-7)
-      chartBars.innerHTML = recentEvents.map((e, idx) => {
-        const heightPct = Math.min(100, Math.max(15, (e.state?.runwayDays || 5) * 10))
-        return `
-          <div class="chart-bar-group">
-            <div class="chart-bar" style="height: ${heightPct}%;" title="${e.state?.runwayDays?.toFixed(1)} days"></div>
-            <span class="chart-label">C${idx + 1}</span>
-          </div>
-        `
-      }).join('')
-    }
+  function handle401() {
+    $('authOverlay').hidden = false
   }
 
-  function renderMemory(records) {
-    const tbody = document.getElementById('memoryTableBody')
-    if (!records || records.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No memory records stored yet.</td></tr>'
-      return
-    }
-
-    tbody.innerHTML = records.map(r => {
-      const isSuccess = r.outcome?.includes('SUCCESS')
-      const isFail = r.outcome?.includes('FAILED')
-      const badgeClass = isSuccess ? 'badge-success' : isFail ? 'badge-danger' : 'badge-outline'
-      return `
-        <tr>
-          <td>${esc(new Date(r.created_at).toLocaleTimeString())}</td>
-          <td><code>${esc(r.agent_id)}</code></td>
-          <td><span class="badge ${r.action === 'TOP_UP' ? 'badge-success' : 'badge-outline'}">${esc(r.action)}</span></td>
-          <td><strong>${esc(r.runway_days_at_decision?.toFixed(1) ?? '--')} days</strong></td>
-          <td>${r.amount_if_topup ? `${esc(r.amount_if_topup)} USDFC` : '--'}</td>
-          <td><span class="badge ${badgeClass}">${esc(r.outcome || 'PENDING EVALUATION')}</span></td>
-        </tr>
-      `
-    }).join('')
-  }
-
-  function renderRequests(requests) {
-    const tbody = document.getElementById('delegationTableBody')
-    document.getElementById('delPendingCount').textContent = requests.filter(r => r.status === 'pending').length
-
-    if (!requests || requests.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No delegation requests in queue.</td></tr>'
-      return
-    }
-
-    tbody.innerHTML = requests.map(r => `
-      <tr>
-        <td><code>${esc(r.id)}</code></td>
-        <td>${esc(r.requesting_agent_id)}</td>
-        <td>${esc(r.treasury_agent_id)}</td>
-        <td><strong>${esc(r.amount_requested)} USDFC</strong></td>
-        <td>${esc(r.reason)}</td>
-        <td><span class="badge ${r.status === 'approved' ? 'badge-success' : r.status === 'rejected' ? 'badge-danger' : 'badge-warning'}">${esc((r.status || '').toUpperCase())}</span></td>
-        <td><code style="font-size:0.75rem;">${esc(r.tx_hash ? r.tx_hash.slice(0, 16) + '...' : '--')}</code></td>
-      </tr>
-    `).join('')
-  }
-
-  // --- Simulation Triggers ---
-  async function runSim(payload) {
-    const outputEl = document.getElementById('simRawOutput')
-    outputEl.textContent = 'Running simulation through policy and deterministic guardrails...'
-
+  $('authSubmit').addEventListener('click', async () => {
+    sessionStorage.setItem('fourierToken', $('authTokenInput').value.trim())
     try {
-      const res = await fetch('/api/simulate', {
+      const res = await api('/api/status')
+      if (res.ok) {
+        $('authOverlay').hidden = true
+        $('authError').hidden = true
+        refresh()
+      } else {
+        $('authError').hidden = false
+      }
+    } catch { $('authError').hidden = false }
+  })
+
+  // ---------- navigation ----------
+
+  const pageTitles = {
+    overview: 'Overview',
+    simulation: 'Simulation',
+    delegation: 'Delegation',
+    memory: 'Memory & learning',
+    policy: 'Policy Studio'
+  }
+
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'))
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+      btn.classList.add('active')
+      const page = btn.dataset.page
+      $('page-' + page).classList.add('active')
+      $('pageTitle').textContent = pageTitles[page]
+      document.title = `Fourier — ${pageTitles[page]}`
+    })
+  })
+
+  $('refreshBtn').addEventListener('click', refresh)
+
+  // ---------- state ----------
+
+  let latestStatus = null
+  let latestEvents = []
+  let simChoice = 'burn-spike'
+
+  // ---------- simulation picker ----------
+
+  document.querySelectorAll('.sim-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sim-option').forEach(b => b.classList.remove('selected'))
+      btn.classList.add('selected')
+      simChoice = btn.dataset.sim
+      $('replayRow').hidden = simChoice !== 'replay'
+    })
+  })
+
+  $('replayDays').addEventListener('input', e => {
+    $('replayDaysLabel').textContent = e.target.value
+  })
+
+  $('btnRunSim').addEventListener('click', async () => {
+    const btn = $('btnRunSim')
+    btn.disabled = true
+    btn.textContent = 'Running…'
+    try {
+      const payload =
+        simChoice === 'replay' ? { replayDays: parseInt($('replayDays').value, 10) }
+        : simChoice === 'live' ? {}
+        : { scenario: simChoice }
+
+      const res = await api('/api/simulate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
       const data = await res.json()
-
-      document.getElementById('simObservedRunway').textContent = `${data.state?.runwayDays?.toFixed(1) ?? '--'} days`
-      document.getElementById('simProposedAction').textContent = data.proposal?.action ?? data.decision?.action ?? 'HOLD'
-      document.getElementById('simClampedVal').textContent = data.guardrail?.clamped ? 'CLAMPED TO 5.0' : 'WITHIN LIMITS'
-      document.getElementById('simProjectedRunway').textContent = data.execution?.estimatedNewRunwayDays ? `~${data.execution.estimatedNewRunwayDays} days` : 'Maintained'
-
-      outputEl.textContent = JSON.stringify(data, null, 2)
-      refreshDashboard()
+      renderSimVerdict(data)
+      $('simRaw').hidden = false
+      $('simRawOutput').textContent = JSON.stringify(data, null, 2)
+      refresh()
     } catch (err) {
-      outputEl.textContent = `Simulation Error: ${err instanceof Error ? err.message : String(err)}`
+      $('simVerdict').innerHTML = `<div class="verdict-empty">Simulation failed: ${esc(err.message)}</div>`
+    } finally {
+      btn.disabled = false
+      btn.textContent = 'Run simulation'
+    }
+  })
+
+  function badge(text, cls) {
+    return `<span class="chip ${cls}">${esc(text)}</span>`
+  }
+
+  function renderSimVerdict(data) {
+    const state = data.state || {}
+    const proposal = data.proposal || {}
+    const decision = data.decision || proposal
+    const guardrail = data.guardrail || {}
+    const execution = data.execution || {}
+    const approval = data.approval
+
+    let title = decision.action || proposal.action || 'HOLD'
+    let extra = ''
+
+    if (title === 'TOP_UP') {
+      const projected = execution.estimatedNewRunwayDays
+      title = `Top up ${decision.amountUSDFC} USDFC`
+      extra += vrow('Runway now', `${num(state.runwayDays)} days`)
+      if (projected) extra += vrow('Runway after', `~${num(projected)} days`)
+      if (guardrail.clamped) extra += vrow('Guardrail', 'amount clamped to policy max')
+      extra += vrow('Transaction', 'none — simulation only')
+    } else if (title === 'TRIAGE') {
+      title = 'Triage approval required'
+      const ranked = (decision.rankedDatasetIds || []).map(esc).join(' → ')
+      extra += vrow('Ranked datasets', ranked || '–')
+      if (approval?.token) extra += vrow('Approval token', `<code>${esc(approval.token)}</code>`)
+      extra += vrow('Transaction', 'none — approval first')
+    } else if (title === 'HOLD') {
+      title = 'Hold — no action needed'
+      extra += vrow('Runway', `${num(state.runwayDays)} days`)
+    } else if (title === 'WARN') {
+      title = 'Warning raised'
+      extra += vrow('Runway', `${num(state.runwayDays)} days`)
+    }
+
+    if (data.mode === 'replay') {
+      extra += vrow('Replay window', `last ${data.replayDays} day(s)`)
+    }
+
+    const statusChip = guardrail.status === 'approval_required'
+      ? badge('approval required', 'chip-warn')
+      : guardrail.status === 'hold'
+      ? badge('blocked by guardrail', 'chip-bad')
+      : badge('guardrails passed', 'chip-ok')
+
+    $('simVerdict').innerHTML = `
+      <div class="verdict-action">${statusChip}<span class="verdict-title">${esc(title)}</span></div>
+      ${decision.reasoning ? `<div class="verdict-reason">${esc(decision.reasoning)}</div>` : ''}
+      <div class="verdict-rows">${extra}</div>
+      <div class="verdict-chips">${badge('zero transactions', 'chip')}</div>
+    `
+  }
+
+  function vrow(k, v) {
+    return `<div class="vrow"><span class="k">${esc(k)}</span><span class="v">${v}</span></div>`
+  }
+
+  // ---------- policy compiler ----------
+
+  $('btnCompilePolicy').addEventListener('click', async () => {
+    const btn = $('btnCompilePolicy')
+    btn.disabled = true
+    btn.textContent = 'Compiling…'
+    try {
+      const res = await api('/api/policy/compile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: $('policyInputText').value })
+      })
+      const compiled = await res.json()
+      renderPolicy(compiled)
+      $('policyRaw').hidden = false
+      $('compiledPolicyOutput').textContent = JSON.stringify(compiled, null, 2)
+    } catch (err) {
+      $('policyResult').innerHTML = `<div class="verdict-empty">Compilation failed: ${esc(err.message)}. The compiler refuses to guess — tighten the wording and retry.</div>`
+      $('policyRaw').hidden = true
+    } finally {
+      btn.disabled = false
+      btn.textContent = 'Compile policy'
+    }
+  })
+
+  function renderPolicy(p) {
+    $('policyVersion').textContent = p.version ? `version ${p.version}` : ''
+    const flags = []
+    flags.push(p.topUpEnabled ? badge('top-ups on', 'chip-ok') : badge('top-ups off', 'chip-bad'))
+    flags.push(p.triageEnabled ? badge('triage on', 'chip-ok') : badge('triage off', 'chip'))
+    if (p.triageEnabled) flags.push(p.triageRequiresApproval ? badge('approval required', 'chip-warn') : badge('no approval', 'chip-bad'))
+    $('policyResult').innerHTML = `
+      <div class="policy-rows">
+        ${vrow('Warn below', `${num(p.warningRunwayDays)} days`)}
+        ${vrow('Act below', `${num(p.actionRunwayDays)} days`)}
+        ${vrow('Max auto top-up', `${p.maxAutoTopUpUSDFC} USDFC`)}
+        <div class="vrow"><span class="k">Dataset priority</span><span class="v prio-chips">${(p.datasetPriority || []).map(d => `<span class="chip">${esc(d)}</span>`).join('') || '–'}</span></div>
+        <div class="vrow"><span class="k">Flags</span><span class="v prio-chips">${flags.join('')}</span></div>
+      </div>
+    `
+  }
+
+  // ---------- data refresh & rendering ----------
+
+  async function refresh() {
+    try {
+      const [statusRes, eventsRes, memRes, reqRes] = await Promise.all([
+        api('/api/status'),
+        api('/api/events?limit=20'),
+        api('/api/memory'),
+        api('/api/requests')
+      ])
+
+      if (statusRes.status === 401 || eventsRes.status === 401) return handle401()
+
+      if (statusRes.ok) {
+        latestStatus = await statusRes.json()
+        renderStatus(latestStatus)
+      }
+      if (eventsRes.ok) {
+        latestEvents = await eventsRes.json()
+        renderEvents()
+        renderLatestVerdict()
+      }
+      if (memRes.ok) renderMemory(await memRes.json())
+      if (reqRes.ok) renderRequests(await reqRes.json())
+    } catch (err) {
+      console.error('Dashboard refresh failed:', err)
     }
   }
 
-  document.getElementById('btnSimBurnSpike')?.addEventListener('click', () => {
-    document.getElementById('scenarioExplainer').innerHTML = `
-      <strong>Burn-Spike Story:</strong> Naive point-in-time calculation shows 9.8 days, but accelerating spend projects 2.1 days. Model proposes 7.5 USDFC; Guardrails clamp to 5.0 USDFC.
-    `
-    runSim({ scenario: 'burn-spike' })
-  })
+  function renderStatus({ config, policy, latestEvent, health }) {
+    // sidebar + topbar identity
+    $('footNetwork').textContent = config.network === 'calibration' ? 'Calibration' : 'Mainnet'
+    $('chipNetwork').textContent = config.network === 'calibration' ? 'Calibration' : 'Mainnet'
+    $('footProvider').textContent = config.model.provider
+    const mode = latestEvent?.mode || 'live'
+    $('footMode').textContent = mode
+    $('chipMode').textContent = mode.toUpperCase()
 
-  document.getElementById('btnSimBudgetSqueeze')?.addEventListener('click', () => {
-    document.getElementById('scenarioExplainer').innerHTML = `
-      <strong>Budget-Squeeze Story:</strong> Low funds (0.7 USDFC) triggers dataset prioritization. Non-essential datasets ranked for TRIAGE; gated behind single-use approval token.
-    `
-    runSim({ scenario: 'budget-squeeze' })
-  })
+    const stale = health?.watcher === 'stale'
+    $('footDot').className = `dot ${stale ? 'dot-stale' : 'dot-live'}`
 
-  document.getElementById('btnSimLiveOnchain')?.addEventListener('click', () => {
-    document.getElementById('scenarioExplainer').innerHTML = `
-      <strong>Live Onchain Zero-Tx Read:</strong> Reads live onchain state via Synapse SDK. Proposes and validates actions without dispatching any onchain transactions.
-    `
-    runSim({})
-  })
+    // KPIs
+    const state = latestEvent?.state
+    if (state) {
+      $('kpiRunway').textContent = num(state.runwayDays)
+      $('kpiAvailable').textContent = num(state.availableUSDFC, 2)
+      $('kpiLocked').textContent = num(state.lockedUSDFC, 2)
+      $('kpiSpend').textContent = state.spendRateUSDFCPerDay !== null ? num(state.spendRateUSDFCPerDay, 2) : '–'
+      $('kpiSpendNote').textContent = state.spendRateUSDFCPerDay !== null ? 'USDFC per day' : 'no active storage spend'
 
-  // Slider label
-  const slider = document.getElementById('replayDaysSlider')
-  slider?.addEventListener('input', e => {
-    document.getElementById('replayDaysLabel').textContent = e.target.value
-  })
+      // deltas vs previous event
+      const prev = latestEvents.find(e => e.id !== latestEvent.id)
+      renderDelta('kpiRunwayDelta', prev?.state?.runwayDays, state.runwayDays, 'd', true)
+      renderDelta('kpiAvailableDelta', prev?.state?.availableUSDFC, state.availableUSDFC, '', false)
 
-  document.getElementById('btnSimReplay')?.addEventListener('click', () => {
-    const days = parseInt(slider.value, 10)
-    runSim({ replayDays: days })
-  })
+      // runway health chip
+      const stateEl = $('kpiRunwayState')
+      if (state.runwayDays <= policy.actionRunwayDays) {
+        stateEl.textContent = 'below action threshold'
+        stateEl.className = 'chip chip-bad'
+      } else if (state.runwayDays <= policy.warningRunwayDays) {
+        stateEl.textContent = 'below warning threshold'
+        stateEl.className = 'chip chip-warn'
+      } else {
+        stateEl.textContent = 'healthy'
+        stateEl.className = 'chip chip-ok'
+      }
 
-  // Policy Compiler
-  document.getElementById('btnCompilePolicy')?.addEventListener('click', async () => {
-    const text = document.getElementById('policyInputText').value
-    const outputEl = document.getElementById('compiledPolicyOutput')
-    outputEl.textContent = 'Compiling...'
-
-    try {
-      const res = await fetch('/api/policy/compile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
-      })
-      const compiled = await res.json()
-      outputEl.textContent = JSON.stringify(compiled, null, 2)
-    } catch (err) {
-      outputEl.textContent = `Compilation Error: ${err.message}`
+      renderChart(policy)
+      renderLatestIntoVerdict(latestEvent)
     }
-  })
 
-  // Refresh Button
-  document.getElementById('refreshBtn')?.addEventListener('click', refreshDashboard)
+    // delegation page stats
+    $('delRole').textContent = config.role
+    $('delTreasury').textContent = config.role === 'standalone' ? '—' : (config.treasuryAgentId || 'treasury-main')
+    $('delCoord').textContent = health?.delegation?.coordination === 'remote' ? 'remote coordination' : 'local queue'
+    $('delPoll').textContent = `polled every ${config.delegationPollMinutes || 5} min`
+  }
 
-  // Initial Load & Polling every 5s
-  refreshDashboard()
-  setInterval(refreshDashboard, 5000)
+  function renderDelta(id, before, after, unit, downIsGood) {
+    const el = $(id)
+    if (typeof before !== 'number' || typeof after !== 'number' || before === after) {
+      el.textContent = ''
+      return
+    }
+    const diff = after - before
+    const up = diff > 0
+    const good = downIsGood ? !up : up
+    el.textContent = `${up ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}${unit}`
+    el.className = `delta ${good ? 'delta-up' : 'delta-down'}`
+  }
+
+  // Signature element: runway bars aligned against policy thresholds.
+  function renderChart(policy) {
+    const chart = $('runwayChart')
+    const events = [...latestEvents].slice(-7)
+    if (events.length === 0) {
+      chart.innerHTML = '<div class="verdict-empty">No checks recorded yet.</div>'
+      $('chartAux').textContent = 'no data'
+      return
+    }
+
+    const values = events.map(e => e.state?.runwayDays ?? 0)
+    const max = Math.max(...values, policy.warningRunwayDays, policy.actionRunwayDays, 1) * 1.15
+    const yPct = d => `${Math.min(96, (d / max) * 100)}%`
+
+    const thresholds =
+      `<div class="chart-grid"></div>` +
+      `<div class="chart-thresh" style="bottom:${yPct(policy.warningRunwayDays)}"><span>warn ${policy.warningRunwayDays}d</span></div>` +
+      `<div class="chart-thresh" style="bottom:${yPct(policy.actionRunwayDays)}"><span>act ${policy.actionRunwayDays}d</span></div>`
+
+    const bars = events.map((e, i) => {
+      const v = e.state?.runwayDays ?? 0
+      const sim = e.mode === 'simulate' ? ' bar-sim' : ''
+      const label = i === events.length - 1 ? 'now' : `-${events.length - 1 - i}`
+      return `
+        <div class="bar-col">
+          <div class="bar-tip">${num(v)} d · ${esc(e.mode)}</div>
+          <div class="bar${sim}" style="height:${Math.max(2, (v / max) * 100)}%"></div>
+          <span class="bar-label">${esc(label)}</span>
+        </div>`
+    }).join('')
+
+    chart.innerHTML = thresholds + bars
+    $('chartAux').textContent = `last ${events.length} check${events.length > 1 ? 's' : ''}`
+  }
+
+  function renderLatestIntoVerdict(event) {
+    const decision = event.decision || {}
+    const guardrail = event.guardrail || {}
+    const execution = event.execution || {}
+    const state = event.state || {}
+
+    let title = decision.action || 'HOLD'
+    if (title === 'TOP_UP') title = `Top up ${decision.amountUSDFC} USDFC`
+    if (title === 'TRIAGE') title = 'Triage (approval gated)'
+    if (title === 'HOLD') title = 'Hold'
+
+    const chip = guardrail.status === 'approval_required'
+      ? badge('approval required', 'chip-warn')
+      : guardrail.status === 'hold'
+      ? badge('blocked', 'chip-bad')
+      : badge('allowed', 'chip-ok')
+
+    const tx = execution.transactionId
+      ? `<code>${esc(String(execution.transactionId).slice(0, 14))}…</code>`
+      : (execution.status === 'simulated' ? 'none — simulated' : '—')
+
+    $('latestVerdict').innerHTML = `
+      <div class="verdict-action">${chip}<span class="verdict-title">${esc(title)}</span></div>
+      ${decision.reasoning ? `<div class="verdict-reason">${esc(decision.reasoning)}</div>` : ''}
+      <div class="verdict-rows">
+        ${vrow('Runway at decision', `${num(state.runwayDays)} days`)}
+        ${vrow('Guardrail', esc(guardrail.status || 'allow') + (guardrail.clamped ? ' · clamped' : ''))}
+        ${vrow('Execution', `${esc(execution.status || '—')} · ${tx}`)}
+        ${vrow('Checked', time(event.recordedAt))}
+      </div>
+    `
+  }
+
+  function renderLatestVerdict() {
+    if (latestEvents.length > 0 && latestStatus) {
+      renderLatestIntoVerdict(latestEvents[latestEvents.length - 1])
+    }
+  }
+
+  function renderEvents() {
+    const tbody = $('eventsTableBody')
+    const q = ($('eventSearch').value || '').toLowerCase()
+    const modeFilter = $('eventModeFilter').value
+
+    const filtered = [...latestEvents]
+      .reverse()
+      .filter(e => (modeFilter ? e.mode === modeFilter : true))
+      .filter(e => {
+        if (!q) return true
+        const hay = `${e.decision?.action ?? ''} ${e.proposal?.action ?? ''} ${e.execution?.summary ?? ''} ${e.state?.source ?? ''}`.toLowerCase()
+        return hay.includes(q)
+      })
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No decisions match. Run a simulation or wait for the next scheduled check.</td></tr>'
+      return
+    }
+
+    tbody.innerHTML = filtered.map(e => {
+      const chip = e.guardrail?.status === 'allow'
+        ? badge(e.guardrail.status, 'chip-ok')
+        : e.guardrail?.status === 'approval_required'
+        ? badge(e.guardrail.status, 'chip-warn')
+        : badge(e.guardrail?.status ?? '—', 'chip')
+      const src = e.state?.source === 'live' ? '' : ' · ' + (e.state?.source === 'scenario' ? 'scenario' : 'fixture')
+      return `
+        <tr>
+          <td class="dim">${esc(time(e.recordedAt))}</td>
+          <td>${badge(e.mode === 'live' ? 'live' : 'sim', e.mode === 'live' ? 'chip-accent' : 'chip')}${src ? `<span class="dim" style="font-size:11px">${esc(src)}</span>` : ''}</td>
+          <td class="num">${esc(num(e.state?.runwayDays))} d</td>
+          <td><code>${esc(e.proposal?.action ?? 'HOLD')}</code></td>
+          <td>${chip}</td>
+          <td class="dim">${esc(e.execution?.summary ?? '—')}</td>
+        </tr>`
+    }).join('')
+  }
+
+  $('eventSearch').addEventListener('input', renderEvents)
+  $('eventModeFilter').addEventListener('change', renderEvents)
+
+  function renderMemory(records) {
+    const tbody = $('memoryTableBody')
+
+    // derived insight — factual, from outcomes only
+    const graded = records.filter(r => r.outcome)
+    const ok = graded.filter(r => r.outcome.includes('SUCCESS') || r.outcome.includes('STABILIZED')).length
+    const failed = graded.filter(r => r.outcome.includes('FAILED')).length
+    const insight = $('memoryInsight')
+    if (graded.length === 0) {
+      insight.textContent = 'No outcomes evaluated yet. The agent grades each past decision against the next observation and adapts.'
+    } else {
+      const last = graded[graded.length - 1]
+      insight.textContent =
+        `${ok} of ${graded.length} graded decisions landed well` +
+        (failed ? `, ${failed} backfired` : '') +
+        `. Most recent: ${last.action} at ${num(last.runway_days_at_decision)}d runway → ${last.outcome}. The next prompt carries these outcomes so the agent adjusts.`
+    }
+
+    if (!records || records.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No memory records yet — decisions land here after the first check.</td></tr>'
+      return
+    }
+
+    tbody.innerHTML = [...records].reverse().map(r => {
+      const isSuccess = r.outcome?.includes('SUCCESS') || r.outcome?.includes('STABILIZED')
+      const isFail = r.outcome?.includes('FAILED')
+      const chip = !r.outcome
+        ? badge('pending', 'chip')
+        : isFail ? badge(r.outcome, 'chip-bad')
+        : badge(r.outcome, 'chip-ok')
+      return `
+        <tr>
+          <td class="dim">${esc(time(r.created_at))}</td>
+          <td><code>${esc(r.agent_id)}</code></td>
+          <td><strong>${esc(r.action)}</strong></td>
+          <td class="num">${esc(num(r.runway_days_at_decision))} d</td>
+          <td class="num">${r.amount_if_topup ? esc(r.amount_if_topup) + ' USDFC' : '—'}</td>
+          <td>${chip}</td>
+        </tr>`
+    }).join('')
+  }
+
+  function renderRequests(requests) {
+    const tbody = $('delegationTableBody')
+    $('delPending').textContent = requests.filter(r => r.status === 'pending').length
+
+    if (!requests || requests.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No funding requests. A child agent posts here when its runway drops below the action threshold.</td></tr>'
+      return
+    }
+
+    tbody.innerHTML = [...requests].reverse().map(r => {
+      const chip = r.status === 'approved'
+        ? badge('approved', 'chip-ok')
+        : r.status === 'rejected'
+        ? badge('rejected', 'chip-bad')
+        : badge('pending', 'chip-warn')
+      return `
+        <tr>
+          <td><code>${esc(r.id)}</code></td>
+          <td>${esc(r.requesting_agent_id)}</td>
+          <td>${esc(r.treasury_agent_id)}</td>
+          <td class="num">${esc(r.amount_requested)} USDFC</td>
+          <td class="dim">${esc(r.reason)}</td>
+          <td>${chip}${r.settled_at ? '<span class="dim" style="font-size:11px"> · settled</span>' : ''}</td>
+          <td>${r.tx_hash ? `<code>${esc(String(r.tx_hash).slice(0, 14))}…</code>` : '—'}</td>
+        </tr>`
+    }).join('')
+  }
+
+  // initial load + polling
+  refresh()
+  setInterval(refresh, 5000)
 })
