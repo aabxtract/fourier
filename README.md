@@ -11,6 +11,14 @@ Fourier monitors your Filecoin Onchain Cloud storage accounts, calculates storag
 
 ---
 
+## Documentation
+
+- **[Architecture](docs/architecture.md)** — full component diagram, decision pipeline, data ownership
+- **[Threat Model](docs/threat-model.md)** — assets, trust boundaries, 10 mapped threats, failure matrix, non-goals
+- **[Calibration Evidence](docs/calibration-evidence.md)** — live onchain deposit + treasury transfer proofs
+
+---
+
 ## Architecture Overview
 
 ```text
@@ -41,6 +49,10 @@ Filecoin Account / Synapse SDK
       ▼
 [ 7. Multi-Channel Alerts ] (Telegram / Discord / Supabase Event Outbox)
 ```
+
+> Detailed diagrams (including multi-agent delegation and the optional cloud
+> mirror) live in [docs/architecture.md](docs/architecture.md); the security
+> analysis is in [docs/threat-model.md](docs/threat-model.md).
 
 ---
 
