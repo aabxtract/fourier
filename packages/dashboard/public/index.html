@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fourier — Autonomous Filecoin Storage Budget Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Top Navigation Header -->
+    <header class="top-nav">
+      <div class="nav-brand">
+        <div class="logo-mark">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M4 19c3-9 7-14 16-14"/>
+            <path d="M4 12c4-4 8-6 16-6"/>
+            <path d="M4 5c6 0 10 2 16 8"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Fourier</h1>
+          <span class="brand-badge">v2.0-RC</span>
+        </div>
+      </div>
+
+      <div class="nav-meta">
+        <div class="status-pill live-pill" id="agentModePill">
+          <span class="pulse-dot"></span>
+          <span id="agentModeLabel">LIVE MONITORING</span>
+        </div>
+        <div class="meta-tag">
+          <span class="tag-label">Network:</span>
+          <span class="tag-value" id="netLabel">Calibration</span>
+        </div>
+        <div class="meta-tag">
+          <span class="tag-label">Role:</span>
+          <span class="tag-value role-badge" id="roleLabel">Standalone</span>
+        </div>
+        <div class="meta-tag">
+          <span class="tag-label">AI Provider:</span>
+          <span class="tag-value" id="providerLabel">Claude</span>
+        </div>
+        <button id="refreshBtn" class="icon-btn" title="Refresh Telemetry">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="tab-bar">
+      <button class="tab-btn active" data-tab="overview">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        Live Overview
+      </button>
+      <button class="tab-btn" data-tab="simulation">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+        Simulation Mode <span class="tab-pill sim-pill">NON-LIVE</span>
+      </button>
+      <button class="tab-btn" data-tab="delegation">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        Multi-Agent Delegation
+      </button>
+      <button class="tab-btn" data-tab="memory">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+        Agent Memory & Learning
+      </button>
+      <button class="tab-btn" data-tab="policy">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        Policy Compiler
+      </button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-viewport">
+
+      <!-- ======================================================== -->
+      <!-- TAB 1: LIVE OVERVIEW                                     -->
+      <!-- ======================================================== -->
+      <section id="tab-overview" class="tab-pane active">
+        <!-- Top Metrics Ribbon -->
+        <div class="metrics-grid">
+          <div class="metric-card runway-card">
+            <div class="metric-header">
+              <span class="metric-title">Storage Runway</span>
+              <span class="metric-sub" id="runwayStatusBadge">HEALTHY</span>
+            </div>
+            <div class="metric-val-row">
+              <span class="metric-val" id="metricRunway">8.5</span>
+              <span class="metric-unit">days</span>
+            </div>
+            <div class="runway-bar-wrap">
+              <div class="runway-bar-fill" id="runwayBarFill" style="width: 75%;"></div>
+            </div>
+            <div class="threshold-markers">
+              <span>Action: 3d</span>
+              <span>Warning: 7d</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-title">Available USDFC</span>
+              <span class="token-pill">USDFC</span>
+            </div>
+            <div class="metric-val-row">
+              <span class="metric-val" id="metricAvailable">15.00</span>
+              <span class="metric-unit">tokens</span>
+            </div>
+            <div class="metric-footnote">Locked: <strong id="metricLocked">4.20</strong> USDFC</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-title">Observed Spend Rate</span>
+              <span class="trend-icon">📉</span>
+            </div>
+            <div class="metric-val-row">
+              <span class="metric-val" id="metricSpendRate">1.76</span>
+              <span class="metric-unit">USDFC / day</span>
+            </div>
+            <div class="metric-footnote" id="metricHistoryDays">Computed from recent observation window</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-title">System Invariants</span>
+              <span class="shield-badge">GUARDED</span>
+            </div>
+            <div class="invariants-list">
+              <div class="inv-item"><span>Top-Up Clamping:</span> <strong id="invTopUpClamp">Active (5 USDFC)</strong></div>
+              <div class="inv-item"><span>Triage Approval:</span> <strong>Enforced</strong></div>
+              <div class="inv-item"><span>Simulations:</span> <strong>Zero Tx Guarantee</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Middle Row: Runway Trend Chart & Decision Card -->
+        <div class="grid-2col">
+          <!-- Runway & Observation Trend -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>Runway & Spend Trajectory</h3>
+              <span class="header-aux" id="lastObservedTime">Last check: Just now</span>
+            </div>
+            <div class="chart-container">
+              <div class="sim-chart-bars" id="overviewChartBars">
+                <!-- Dynamic bars injected via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Current Decision & Guardrails Diff Card -->
+          <div class="panel-card decision-diff-card">
+            <div class="panel-header">
+              <h3>Latest Autonomous Proposal & Guardrails</h3>
+              <span class="badge badge-success" id="latestActionBadge">HOLD</span>
+            </div>
+            <div class="diff-content">
+              <div class="diff-box">
+                <div class="diff-title">1. Raw Model Proposal (Untrusted)</div>
+                <pre class="code-block" id="diffProposal">{"action": "HOLD", "reasoning": "Runway is healthy at 8.5 days."}</pre>
+              </div>
+              <div class="diff-box">
+                <div class="diff-title">2. Guardrail-Adjusted & Authorized Execution</div>
+                <pre class="code-block" id="diffExecution">{"status": "skipped", "summary": "No onchain action taken (HOLD).", "transactionId": null}</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subsystems Health Strip (rendered from real /api/status health) -->
+        <div class="subsystems-panel">
+          <h3>Subsystem Health & Dependency Status</h3>
+          <div class="subsystems-grid" id="subsystemsGrid">
+            <div class="subsystem-item"><span class="dot-green"></span> <strong>Loading…</strong></div>
+          </div>
+        </div>
+
+        <!-- Live Events Stream -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3>Durable Audit Log (Last Checks)</h3>
+            <span class="header-aux">Immutable Append-Only</span>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Mode</th>
+                  <th>Runway</th>
+                  <th>Available</th>
+                  <th>Proposal</th>
+                  <th>Guardrail</th>
+                  <th>Execution Result</th>
+                </tr>
+              </thead>
+              <tbody id="eventsTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- TAB 2: SIMULATION (NON-LIVE)                             -->
+      <!-- ======================================================== -->
+      <section id="tab-simulation" class="tab-pane">
+        <div class="simulation-banner">
+          <div class="sim-banner-icon">⚠️</div>
+          <div class="sim-banner-text">
+            <h4>NON-LIVE SIMULATION ENVIRONMENT</h4>
+            <p>Every check evaluates real or synthetic states through the full policy and guardrails pipeline. <strong>Zero onchain transactions are executed. Signers are disarmed.</strong></p>
+          </div>
+        </div>
+
+        <div class="sim-controls-grid">
+          <!-- Scenario Trigger Card -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>1. Named Scenario Evaluation</h3>
+            </div>
+            <p class="panel-desc">Test edge cases deterministically without live network access:</p>
+            <div class="btn-group">
+              <button class="btn btn-primary" id="btnSimBurnSpike">
+                🔥 Run Burn-Spike Scenario
+              </button>
+              <button class="btn btn-secondary" id="btnSimBudgetSqueeze">
+                🚨 Run Budget-Squeeze Scenario
+              </button>
+              <button class="btn btn-outline" id="btnSimLiveOnchain">
+                🔍 Live Onchain Zero-Tx Read
+              </button>
+            </div>
+            <div class="scenario-explainer" id="scenarioExplainer">
+              <strong>Burn-Spike Story:</strong> Naive point-in-time calculation shows 9.8 days, but accelerating spend projects 2.1 days. Model proposes 7.5 USDFC; Guardrails clamp to 5.0 USDFC.
+            </div>
+          </div>
+
+          <!-- Historical Replay Timeline Card -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>2. Historical Event Replay (fourier simulate --days &lt;N&gt;)</h3>
+            </div>
+            <p class="panel-desc">Replay past observation history day-by-day to verify what decisions Fourier would have made:</p>
+            <div class="slider-wrap">
+              <label for="replayDaysSlider">Replay Window: <strong id="replayDaysLabel">7</strong> days</label>
+              <input type="range" id="replayDaysSlider" min="1" max="30" value="7">
+            </div>
+            <button class="btn btn-accent" id="btnSimReplay">
+              ⏪ Execute Historical Replay
+            </button>
+          </div>
+        </div>
+
+        <!-- Simulation Output Console -->
+        <div class="panel-card sim-results-card">
+          <div class="panel-header">
+            <h3>Simulation Telemetry & Verification Output</h3>
+            <span class="badge badge-sim">ZERO TX VERIFIED</span>
+          </div>
+          <div class="sim-output-grid">
+            <div class="sim-metric-box">
+              <span class="sim-lbl">Observed Runway</span>
+              <span class="sim-val" id="simObservedRunway">--</span>
+            </div>
+            <div class="sim-metric-box">
+              <span class="sim-lbl">Proposed Action</span>
+              <span class="sim-val" id="simProposedAction">--</span>
+            </div>
+            <div class="sim-metric-box">
+              <span class="sim-lbl">Guardrail Clamping</span>
+              <span class="sim-val" id="simClampedVal">--</span>
+            </div>
+            <div class="sim-metric-box">
+              <span class="sim-lbl">Projected New Runway</span>
+              <span class="sim-val highlight" id="simProjectedRunway">--</span>
+            </div>
+          </div>
+          <pre class="code-block" id="simRawOutput">Click a scenario or trigger above to run simulation...</pre>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- TAB 3: MULTI-AGENT DELEGATION                            -->
+      <!-- ======================================================== -->
+      <section id="tab-delegation" class="tab-pane">
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3>Multi-Agent Treasury & Child Delegation Feed</h3>
+            <span class="header-aux">5-Minute Polling Queue</span>
+          </div>
+          <p class="panel-desc">
+            In hierarchical setups, child storage agents post funding requests to <code>agent_requests</code> instead of managing treasury keys. Treasury agents evaluate solvency with AI and dispatch <strong>Filecoin Pay</strong> transfers.
+          </p>
+
+          <div class="delegation-stats">
+            <div class="mini-stat">
+              <span>Active Agent Role:</span>
+              <strong id="delRole">Standalone</strong>
+            </div>
+            <div class="mini-stat">
+              <span>Target Treasury:</span>
+              <strong id="delTreasury">treasury-main</strong>
+            </div>
+            <div class="mini-stat">
+              <span>Pending Requests:</span>
+              <strong id="delPendingCount">0</strong>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Request ID</th>
+                  <th>Requesting Agent</th>
+                  <th>Target Treasury</th>
+                  <th>Amount (USDFC)</th>
+                  <th>Justification / Reason</th>
+                  <th>Status</th>
+                  <th>Tx Hash</th>
+                </tr>
+              </thead>
+              <tbody id="delegationTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- TAB 4: AGENT MEMORY & LEARNING AUDIT                     -->
+      <!-- ======================================================== -->
+      <section id="tab-memory" class="tab-pane">
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3>Agent Memory & Outcome Feedback Loop (agent_memory)</h3>
+            <span class="header-aux">Last 10 Context Injected into AI Prompt</span>
+          </div>
+          <p class="panel-desc">
+            At the start of each check cycle $k$, Fourier evaluates the outcome of decision $D_{k-1}$ against current state $S_k$. The model reviews its recent track record to avoid repeated failure modes (e.g. accelerating burn depletion).
+          </p>
+
+          <div class="memory-insights-card">
+            <div class="insight-badge">LEARNING INSIGHT</div>
+            <p id="learningInsightText">
+              "Model strategy adapted: Observed that waiting until 3.0 days under accelerating burn rates caused emergency drops. Model now initiates proactive refills earlier when spend acceleration is detected."
+            </p>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Agent ID</th>
+                  <th>Decision Action</th>
+                  <th>Runway at Decision</th>
+                  <th>Top-Up Amount</th>
+                  <th>Evaluated Outcome (Feedback)</th>
+                </tr>
+              </thead>
+              <tbody id="memoryTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- TAB 5: POLICY COMPILER                                   -->
+      <!-- ======================================================== -->
+      <section id="tab-policy" class="tab-pane">
+        <div class="grid-2col">
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>Natural Prose Policy Source</h3>
+            </div>
+            <textarea id="policyInputText" class="policy-textarea" rows="8">Warn me below 7 days of runway. Below 3 days, top up at most 5 USDFC.
+Preserve customer-ledger and audit-archive before build-cache.
+Never terminate a dataset without my approval.</textarea>
+            <button class="btn btn-primary" id="btnCompilePolicy">
+              ⚡ Compile & Review Policy
+            </button>
+          </div>
+
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>Compiled Policy Object (Deterministic Guardrails)</h3>
+              <span class="badge badge-outline">Version 1</span>
+            </div>
+            <pre class="code-block" id="compiledPolicyOutput">// Compiled JSON will render here...</pre>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        Fourier v2.0 • Filecoin TLDR Builder Challenge Cycle 4
+      </div>
+      <div class="footer-right">
+        Safe Autonomous Storage Budgeting • Deterministic Guardrails
+      </div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

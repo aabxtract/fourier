@@ -1,0 +1,27 @@
+{
+  "name": "@fourier/agent",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Policy-constrained storage budget agent for Filecoin Onchain Cloud",
+  "private": true,
+  "bin": {
+    "fourier": "./dist/src/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx src/index.ts",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  },
+  "dependencies": {
+    "@filoz/synapse-sdk": "^1.2.1",
+    "dotenv": "^17.4.2",
+    "viem": "^2.56.3",
+    "zod": "^4.5.4"
+  }
+}

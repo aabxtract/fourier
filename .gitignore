@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.*
+fourier.config.json
+fourier.policy.json
+*.local.json
+.fourier/
+
+# Wallet files and key material
+*.key
+*.pem
+wallet*.json

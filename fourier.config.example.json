@@ -1,0 +1,23 @@
+{
+  "agentId": "fourier-demo",
+  "network": "calibration",
+  "role": "standalone",
+  "treasuryAgentId": null,
+  "walletAddress": "0x1234567890abcdef1234567890abcdef12345678",
+  "model": {
+    "provider": "claude",
+    "model": "claude-3-7-sonnet-latest"
+  },
+  "thresholds": {
+    "warningRunwayDays": 7,
+    "actionRunwayDays": 3,
+    "maxAutoTopUpUSDFC": 5
+  },
+  "actions": {
+    "topUpEnabled": true,
+    "triageEnabled": false,
+    "triageRequiresApproval": true
+  },
+  "checkIntervalMinutes": 30,
+  "delegationPollMinutes": 5
+}

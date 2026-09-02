@@ -1,0 +1,21 @@
+{
+  "name": "@fourier/dashboard",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Operational Dashboard for Fourier Policy-Constrained Filecoin Storage Agent",
+  "private": true,
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "start": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fourier/agent": "*",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

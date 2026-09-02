@@ -1,0 +1,3 @@
+Warn me below 7 days of runway. Below 3 days, top up at most 5 USDFC.
+Preserve customer-ledger and audit-archive before build-cache.
+Never triage a dataset without my approval in Telegram.
