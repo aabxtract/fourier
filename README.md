@@ -183,6 +183,28 @@ Open [http://localhost:3000](http://localhost:3000) to inspect:
 
 ---
 
+## Online View (code-gated, no logins)
+
+Every Fourier installation can mirror its data to a Neon Postgres database and expose a **read-only live view** on any device — the access code is the account:
+
+```bash
+# 1. Set your Neon connection string in .env
+FOURIER_DATABASE_URL=postgresql://...
+
+# 2. Run the schema once (neon/schema.sql) in the Neon SQL editor
+
+# 3. Generate your access code (prints once; re-sendable via Telegram /link)
+fourier link
+
+# 4. Run the hosted viewer (deployable to Vercel/any host, or local)
+npm run view
+```
+
+- Enter the code — or open the `?code=` link from Telegram — and see runway, decisions, delegation and memory live (5s polling)
+- Codes are high-entropy, stored **hashed** in the cloud, and rotatable: `fourier link --rotate`
+- Every Telegram alert includes a link to your live view
+- **The cloud layer is read-only by construction** — no keys, no execution, no approvals online. The local bot keeps full authority
+
 ## Self-Hosted Architecture
 
 Fourier runs entirely on your machine:

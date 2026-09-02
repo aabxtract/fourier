@@ -8,7 +8,8 @@ import {
   approveCommand,
   demoCommand,
   statusCommand,
-  stopCommand
+  stopCommand,
+  linkCommand
 } from './cli/index.js'
 
 function usage(): never {
@@ -28,6 +29,7 @@ function usage(): never {
       '  fourier demo                                  (run interactive demo sequence)',
       '  fourier approve <token>                       (redeem single-use approval token)',
       '  fourier use <claude|openai|grok|gemini|groq>  (switch active AI model provider)',
+      '  fourier link [--rotate|--show]                (access code for the online view)',
       ''
     ].join('\n')
   )
@@ -73,6 +75,9 @@ async function main() {
       break
     case 'approve':
       await approveCommand(subargs[0])
+      break
+    case 'link':
+      await linkCommand(subargs)
       break
     default:
       usage()

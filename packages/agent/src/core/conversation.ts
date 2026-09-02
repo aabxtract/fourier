@@ -5,6 +5,7 @@ import { loadWorkspaceFiles, buildConversationSystemPrompt, updateUserMd } from 
 import { Watcher } from './watcher.js'
 import { MemoryStore, formatMemoryContext } from './memory.js'
 import { ApprovalStore } from './approvals.js'
+import { AccessCodeStore, viewLink } from './access-code.js'
 import { simulate } from './simulate.js'
 import type { CompiledPolicy } from '../types.js'
 import { AgentLogger } from './logger.js'
@@ -40,6 +41,31 @@ export class ConversationEngine {
     const trimmed = userMessage.trim()
     if (trimmed.toLowerCase().startsWith('/approve')) {
       return this.handleApprovalCommand(trimmed)
+    }
+
+    // `/link` — send the access code + hosted-view link (deterministic).
+    if (trimmed.toLowerCase().startsWith('/link')) {
+      try {
+        const record = new AccessCodeStore('.fourier').load()
+        if (!record) {
+          return {
+            response: 'No access code yet — run `fourier link` on the machine running this agent to create one.',
+            updatedPreferences: false,
+            triggeredSimulation: false
+          }
+        }
+        return {
+          response: `🔑 Access code: ${record.rawCode}\n📊 Live view: ${viewLink(record.rawCode)}\n\nOpen the link (or enter the code) on any device for a read-only view of this agent — no login needed. Rotate anytime with \`fourier link --rotate\`.`,
+          updatedPreferences: false,
+          triggeredSimulation: false
+        }
+      } catch {
+        return {
+          response: 'Could not read the access code store. Run `fourier link` on the agent machine.',
+          updatedPreferences: false,
+          triggeredSimulation: false
+        }
+      }
     }
 
     const secrets = loadEnvSecrets()

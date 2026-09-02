@@ -32,6 +32,7 @@ import { TelegramListener } from '../notifications/telegram-listener.js'
 import { DiscordListener } from '../notifications/discord-listener.js'
 import { AgentLogger, classifyError } from './logger.js'
 import { loadEnvSecrets } from './config.js'
+import { AccessCodeStore, viewLink } from './access-code.js'
 
 export type ProposeFunction = (
   state: WatcherState,
@@ -263,11 +264,20 @@ export async function runOneCheck(
       ? 'warn'
       : 'info'
 
+  // Attach the online-view link when an access code exists (best-effort)
+  let viewFooter = ''
+  try {
+    const codeRecord = new AccessCodeStore('.fourier').load()
+    if (codeRecord) viewFooter = `\n\n📊 Live view: ${viewLink(codeRecord.rawCode)}`
+  } catch {
+    // best-effort — notifications work without the hosted view
+  }
+
   notificationMgr
     .broadcast({
       level: notifyLevel,
       title: `${config.agentId}: ${decision.action}`,
-      message: `${execution.summary}\n${decision.reasoning}`,
+      message: `${execution.summary}\n${decision.reasoning}${viewFooter}`,
       agentId: config.agentId,
       decision,
       timestamp: event.recordedAt
@@ -470,12 +480,13 @@ export async function runLoop(
         // Workspace sync is best-effort and never affects the loop
       }
 
-      // Best-effort optional Supabase mirror of the local event outbox
-      syncEventOutbox(store)
+      // Best-effort optional Neon mirror of the local stores (events outbox,
+      // memory outcomes, request statuses, access-code registration)
+      syncEventOutbox(store, { dataDir, memory, requests, agentId: config.agentId })
         .then(res => {
-          if (!res.skipped && res.synced > 0) logger.info(`Synced ${res.synced} event(s) to remote store`)
+          if (!res.skipped && res.synced > 0) logger.info(`Synced ${res.synced} event(s) to cloud`)
         })
-        .catch(err => logger.error('Event sync failed (will retry next cycle)', err))
+        .catch(err => logger.error('Cloud sync failed (will retry next cycle)', err))
 
       // Write heartbeat for `fourier status`
       const uptimeSeconds = Math.floor((Date.now() - startMs) / 1000)

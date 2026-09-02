@@ -75,6 +75,8 @@ export interface EnvSecrets {
   rpcUrl?: string
   delegationUrl?: string
   dashboardToken?: string
+  databaseUrl?: string
+  viewUrl?: string
   supabaseUrl?: string
   supabaseServiceRoleKey?: string
 }
@@ -92,6 +94,8 @@ export function loadEnvSecrets(): EnvSecrets {
     rpcUrl: process.env.FOURIER_RPC_URL,
     delegationUrl: process.env.FOURIER_DELEGATION_URL,
     dashboardToken: process.env.FOURIER_DASHBOARD_TOKEN,
+    databaseUrl: process.env.FOURIER_DATABASE_URL,
+    viewUrl: process.env.FOURIER_VIEW_URL,
     supabaseUrl: process.env.FOURIER_SUPABASE_URL,
     supabaseServiceRoleKey: process.env.FOURIER_SUPABASE_SERVICE_ROLE_KEY
   }

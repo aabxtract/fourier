@@ -224,13 +224,13 @@ test('event outbox sync is a no-op without remote config', async () => {
     policyVersion: 1
   })
 
-  const result = await syncEventOutbox(store, { supabaseUrl: '', supabaseServiceRoleKey: '' })
+  const result = await syncEventOutbox(store, { databaseUrl: '' })
   assert.equal(result.skipped, true)
   assert.equal(store.unsynced().length, 1)
   rmSync(d, { recursive: true, force: true })
 })
 
-test('event outbox sync posts rows, marks synced, and is idempotent on retry', async () => {
+test('cloud sync fails safely and preserves the outbox when the database is unreachable', async () => {
   const d = dir()
   const store = new EventStore(d)
   store.append({
@@ -246,43 +246,39 @@ test('event outbox sync posts rows, marks synced, and is idempotent on retry', a
     policyVersion: 1
   })
 
-  const posted: string[] = []
-  const server: Server = createServer((req, res) => {
-    if (req.method === 'POST' && req.url?.includes('/rest/v1/agent_events')) {
-      let body = ''
-      req.on('data', c => { body += c })
-      req.on('end', () => {
-        const rows = JSON.parse(body) as Array<{ id: string }>
-        posted.push(...rows.map(r => r.id))
-        for (const row of rows) {
-          assert.match(row.id, /^[0-9a-f]{8}-[0-9a-f]{4}-3[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
-        }
-        res.writeHead(201)
-        res.end()
-      })
-      return
-    }
-    res.writeHead(404)
-    res.end()
-  })
+  // Nothing listens on port 1 — connection must fail fast, never throw.
+  const result = await syncEventOutbox(store, { databaseUrl: 'postgresql://test:test@127.0.0.1:1/db' })
+  assert.equal(result.skipped, false)
+  assert.equal(result.synced, 0)
+  assert.ok(result.error)
+  // Outbox intact — events retry on a later cycle.
+  assert.equal(store.unsynced().length, 1)
+  rmSync(d, { recursive: true, force: true })
+})
 
-  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
-  const address = server.address()
-  const port = typeof address === 'object' && address ? address.port : 0
+test('access code store generates, keeps, and rotates codes', async () => {
+  const d = dir()
+  const { AccessCodeStore, hashCode, normalizeCode, generateRawCode } = await import('../src/core/access-code.js')
+  const store = new AccessCodeStore(d)
 
-  try {
-    const first = await syncEventOutbox(store, { supabaseUrl: `http://127.0.0.1:${port}`, supabaseServiceRoleKey: 'service-key' })
-    assert.equal(first.skipped, false)
-    assert.equal(first.synced, 1)
-    assert.equal(store.unsynced().length, 0)
-    assert.equal(posted.length, 1)
+  const created = store.create('agent-1')
+  assert.match(created.rawCode, /^FK-[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}$/)
+  assert.equal(created.codeHash, hashCode(created.rawCode))
+  // create is idempotent
+  assert.equal(store.create('agent-1').rawCode, created.rawCode)
 
-    const second = await syncEventOutbox(store, { supabaseUrl: `http://127.0.0.1:${port}`, supabaseServiceRoleKey: 'service-key' })
-    assert.equal(second.synced, 0)
-  } finally {
-    await new Promise<void>(resolve => server.close(() => resolve()))
-    rmSync(d, { recursive: true, force: true })
-  }
+  const rotated = store.rotate('agent-1')
+  assert.notEqual(rotated.rawCode, created.rawCode)
+  assert.ok(rotated.previousHashes.includes(created.codeHash))
+
+  // normalizer repairs common mistypes: O->0, I/L->1, strips separators
+  assert.equal(normalizeCode('fk-o1l2o-ab3cd-ef4gh'), 'FK-01120-AB3CD-EF4GH')
+  assert.equal(normalizeCode('FK 01120 AB3CD EF4GH'), 'FK-01120-AB3CD-EF4GH')
+  assert.equal(normalizeCode(created.rawCode), created.rawCode)
+
+  const raw = generateRawCode()
+  assert.equal(raw.length, 'FK-XXXXX-XXXXX-XXXXX'.length)
+  rmSync(d, { recursive: true, force: true })
 })
 
 test('config accepts delegationPollMinutes and child role requirements stay enforced', () => {
