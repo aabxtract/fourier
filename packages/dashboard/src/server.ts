@@ -349,7 +349,10 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
 
   try {
     const content = readFileSync(filePath)
-    res.writeHead(200, { 'Content-Type': getMimeType(filePath) })
+    res.writeHead(200, {
+      'Content-Type': getMimeType(filePath),
+      'Cache-Control': 'no-store'
+    })
     res.end(content)
   } catch (err) {
     res.writeHead(404, { 'Content-Type': 'text/plain' })
