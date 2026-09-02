@@ -67,7 +67,7 @@ flowchart TD
     GUARD -->|"child / treasury"| DEL
     DEL <--> REQ
     EXEC -->|"simulate: zero-tx plan<br/>live: payments.deposit()"| SDK
-    DEL -->|"payments.deposit({amount, to})"| SDK
+    DEL -->|"payments.deposit(amount, to)"| SDK
     LOOP --> STORE
     STORE -.->|"outbox, idempotent upsert"| SB
     LOOP --> NOTIFY
