@@ -2,41 +2,16 @@ import { createServer, IncomingMessage, ServerResponse } from 'node:http'
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve, extname, join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import pg from 'pg'
-import { hashCode, normalizeCode } from '../../agent/src/core/access-code.js'
+import { resolveAgentId, getOverview, getMemory, getRequests } from './logic.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const publicDir = resolve(__dirname, '../public')
 
 /**
- * Fourier hosted viewer — READ-ONLY, code-gated.
- *
- * The access code is the only credential: no accounts, no passwords.
- * Codes are stored hashed in Neon; this API resolves code -> agent_id and
- * serves that agent's mirrored data. There is no write endpoint, no
- * execution path, and no secret material here by construction.
+ * Fourier hosted viewer — READ-ONLY, code-gated (local version).
+ * Vercel deployment of the same logic lives in api/view.ts.
  */
-
-let clientPromise: Promise<pg.Client> | null = null
-
-function db(): Promise<pg.Client> {
-  const url = process.env.FOURIER_DATABASE_URL?.trim()
-  if (!url) {
-    return Promise.reject(new Error('FOURIER_DATABASE_URL is not configured'))
-  }
-  if (!clientPromise) {
-    clientPromise = (async () => {
-      const client = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } })
-      await client.connect()
-      return client
-    })()
-    clientPromise.catch(() => {
-      clientPromise = null
-    })
-  }
-  return clientPromise
-}
 
 // ---------- simple in-memory rate limiting (per IP) ----------
 
@@ -51,19 +26,6 @@ function rateLimited(ip: string, max: number, windowMs: number): boolean {
   }
   entry.count++
   return entry.count > max
-}
-
-// ---------- auth ----------
-
-async function resolveAgentId(code: string | null): Promise<string | null> {
-  if (!code) return null
-  const normalized = normalizeCode(code)
-  const client = await db()
-  const result = await client.query(
-    'select agent_id from agent_codes where code_hash = $1 and revoked_at is null limit 1',
-    [hashCode(normalized)]
-  )
-  return result.rows[0]?.agent_id ?? null
 }
 
 // ---------- API routes ----------
@@ -118,45 +80,18 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): P
   }
 
   try {
-    const client = await db()
-
     if (url.pathname === '/api/view/overview') {
-      const events = await client.query(
-        `select * from agent_events where agent_id = $1 order by created_at desc limit 20`,
-        [agentId]
-      )
-      const state = await client.query(
-        `select policy from agent_state where agent_id = $1`,
-        [agentId]
-      )
-      send(200, {
-        agentId,
-        policy: state.rows[0]?.policy ?? null,
-        events: events.rows
-      })
+      send(200, await getOverview(agentId))
       return
     }
-
     if (url.pathname === '/api/view/memory') {
-      const rows = await client.query(
-        `select * from agent_memory where agent_id = $1 order by created_at desc limit 50`,
-        [agentId]
-      )
-      send(200, rows.rows)
+      send(200, await getMemory(agentId))
       return
     }
-
     if (url.pathname === '/api/view/requests') {
-      const rows = await client.query(
-        `select * from agent_requests
-         where requesting_agent_id = $1 or treasury_agent_id = $1
-         order by created_at desc limit 50`,
-        [agentId]
-      )
-      send(200, rows.rows)
+      send(200, await getRequests(agentId))
       return
     }
-
     send(404, { error: 'not found' })
   } catch (err) {
     send(500, { error: err instanceof Error ? err.message : String(err) })

@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    { "source": "/api/view/auth", "destination": "/api/view?route=auth" },
+    { "source": "/api/view/overview", "destination": "/api/view?route=overview" },
+    { "source": "/api/view/memory", "destination": "/api/view?route=memory" },
+    { "source": "/api/view/requests", "destination": "/api/view?route=requests" }
+  ]
+}
