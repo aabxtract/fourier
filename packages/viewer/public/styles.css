@@ -406,3 +406,7 @@ textarea { width: 100%; resize: vertical; line-height: 1.6; }
   text-align: left; text-decoration: underline;
 }
 .btn-link:hover { color: var(--bad); }
+
+/* ---------- Viewer: real logo mark ---------- */
+
+.brand-mark { display: block; }
