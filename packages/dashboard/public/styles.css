@@ -67,7 +67,9 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .brand-mark {
   width: 28px;
   height: 28px;
-  border-radius: 8px;
+  border-radius: 9px;
+  background: #0a0a0a;
+  padding: 3px;
   display: block;
   flex: none;
 }

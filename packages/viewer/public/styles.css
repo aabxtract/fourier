@@ -65,17 +65,13 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .brand { display: flex; align-items: center; gap: 10px; padding: 2px 8px 20px; }
 
 .brand-mark {
-  width: 26px; height: 26px; border-radius: 8px;
-  background:
-    linear-gradient(180deg, transparent 62%, var(--accent) 62%),
-    var(--ink);
-  position: relative;
-}
-.brand-mark::after {
-  content: ""; position: absolute; inset: 0;
-  background:
-    radial-gradient(circle at 30% 34%, transparent 3.5px, #fff 3.5px 4.5px, transparent 4.5px),
-    radial-gradient(circle at 58% 30%, transparent 2px, #fff 2px 3px, transparent 3px);
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: #0a0a0a;
+  padding: 3px;
+  display: block;
+  flex: none;
 }
 
 .brand-name { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
