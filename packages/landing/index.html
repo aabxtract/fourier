@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fourier — storage budget agent for Filecoin Onchain Cloud</title>
+  <meta name="description" content="Fourier watches your Filecoin Pay balance, forecasts storage runway, and tops up within the limits you set. The AI proposes. Deterministic code disposes.">
+  <link rel="icon" type="image/png" href="logo.png?v=1">
+  <link rel="stylesheet" href="styles.css?v=1">
+</head>
+<body>
+
+  <header class="nav">
+    <div class="nav-inner">
+      <div class="brand">
+        <img class="brand-mark" src="logo.png?v=1" alt="Fourier logo">
+        <span class="brand-name">Fourier</span>
+      </div>
+      <nav class="nav-links">
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#safety">Safety</a>
+        <a href="https://github.com/aabxtract/fourier" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+      <a class="btn btn-small" href="https://www.npmjs.com/package/fourier-agent" target="_blank" rel="noopener">Get started</a>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ============ HERO ============ -->
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">Filecoin Onchain Cloud · Open source</div>
+        <h1>Your storage budget,<br><em>on autopilot.</em></h1>
+        <p class="hero-sub">
+          Fourier watches your Filecoin Pay balance, forecasts the day your storage
+          money runs out, and tops it up within the limits you set — in plain English.
+        </p>
+        <p class="hero-rule">The AI proposes. Deterministic code disposes.</p>
+
+        <div class="install" id="installCmd">
+          <code>npx fourier-agent init</code>
+          <button class="copy-btn" id="copyBtn" aria-label="Copy install command">Copy</button>
+        </div>
+
+        <div class="hero-links">
+          <a href="https://github.com/aabxtract/fourier" target="_blank" rel="noopener">Star on GitHub ↗</a>
+          <a href="https://fourier-view.vercel.app" target="_blank" rel="noopener">Live view demo ↗</a>
+        </div>
+      </div>
+
+      <div class="hero-demo" aria-hidden="true">
+        <div class="term">
+          <div class="term-bar"><span></span><span></span><span></span><em>fourier simulate burn-spike</em></div>
+          <pre class="term-body"><span class="t-dim">$</span> fourier simulate burn-spike
+
+<span class="t-orange">[SIMULATION MODE — no transactions will be sent]</span>
+
+Naive projection ........... <span class="t-white">9.8 days</span>
+History-aware projection ... <span class="t-red">2.1 days</span>
+  <span class="t-dim">spend is accelerating — the balance lied</span>
+
+AI proposal ................ TOP_UP 7.5 USDFC
+<span class="t-orange">Guardrail .................. clamped to 5.0 USDFC</span>
+  <span class="t-dim">policy maxAutoTopUpUSDFC = 5</span>
+
+Would execute deposit(...) <span class="t-dim">→ estimated runway ~33 days</span></pre>
+        </div>
+        <div class="verdict-card">
+          <div class="v-chips"><span class="chip chip-ok">guardrails passed</span><span class="chip">zero transactions</span></div>
+          <div class="v-title">Top up 5 USDFC</div>
+          <div class="v-rows">
+            <div><span>Runway now</span><strong>2.1 days</strong></div>
+            <div><span>Runway after</span><strong>~33 days</strong></div>
+            <div><span>Amount</span><strong>clamped 7.5 → 5.0</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PROBLEM ============ -->
+    <section class="problem">
+      <p>
+        On Filecoin Onchain Cloud, storage providers pull USDFC from your balance
+        <strong>continuously</strong>. If it hits zero, your storage payment rails run dry —
+        and nothing warns you. A point-in-time balance says 9.8 days; accelerating
+        spend says 2.1. <strong>Humans don't watch that. Fourier does.</strong>
+      </p>
+    </section>
+
+    <!-- ============ HOW ============ -->
+    <section class="section" id="how">
+      <h2>Four steps, then it's out of your way</h2>
+      <div class="steps">
+        <div class="step">
+          <span class="step-n">1</span>
+          <h3>Teach it your rules</h3>
+          <p>"Warn me below 7 days. Below 3 days, top up at most 5 USDFC." English in, a strict versioned rulebook out — you review it before it's enforced.</p>
+        </div>
+        <div class="step">
+          <span class="step-n">2</span>
+          <h3>Test-drive it</h3>
+          <p>Named scenarios — burn spikes, budget squeezes — run the full pipeline with a hard guarantee: no signer, no transaction, ever.</p>
+        </div>
+        <div class="step">
+          <span class="step-n">3</span>
+          <h3>Let it live</h3>
+          <p>Every 30 minutes: read the chain, check the rulebook, consult the AI, act within policy. Then it writes everything down.</p>
+        </div>
+        <div class="step">
+          <span class="step-n">4</span>
+          <h3>Check it anywhere</h3>
+          <p>A high-entropy access code — no login — unlocks a read-only live view on any device. Telegram pushes every decision the moment it happens.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FEATURES ============ -->
+    <section class="section" id="features">
+      <h2>What's inside</h2>
+      <div class="features">
+        <div class="feature">
+          <h3>Deterministic guardrails</h3>
+          <p>Top-ups clamped to your cap. Malformed AI output becomes HOLD. Triage disabled by default. The rulebook is code, not a prompt.</p>
+        </div>
+        <div class="feature">
+          <h3>Five AI providers</h3>
+          <p>Claude, OpenAI, Gemini, Grok, or Groq — one decision contract across all of them. Switch with one command; the rails hold regardless.</p>
+        </div>
+        <div class="feature">
+          <h3>Learns from outcomes</h3>
+          <p>Every decision is graded against what happened next. The last ten outcomes ride along in every prompt, so timing and amounts adapt.</p>
+        </div>
+        <div class="feature">
+          <h3>Multi-agent treasuries</h3>
+          <p>Child agents file funding requests; a treasury agent evaluates solvency and pays via Filecoin Pay. Runs across machines, self-hosted.</p>
+        </div>
+        <div class="feature">
+          <h3>Zero-tx simulation</h3>
+          <p>Live onchain reads, named scenarios, and N-day historical replay — a full pipeline rehearsal that cannot touch your wallet.</p>
+        </div>
+        <div class="feature">
+          <h3>Approval tokens</h3>
+          <p>Dangerous actions gate behind single-use, 10-minute, tamper-checked tokens — redeemable from Telegram with <code>/approve</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SAFETY ============ -->
+    <section class="safety" id="safety">
+      <div class="safety-inner">
+        <h2>Built like it's holding money.<br>Because it is.</h2>
+        <ul>
+          <li>The model is untrusted input — every proposal is schema-validated before anything happens</li>
+          <li>Simulation never constructs a signer; live writes report failure honestly, never fake hashes</li>
+          <li>Full audit trail: raw proposal hash, policy version, guardrail diff, execution result</li>
+          <li>Model, notification, or database failure never crashes the loop — worst case is a HOLD</li>
+          <li>Secrets never leave your machine: no keys in the cloud, the browser, or the online view</li>
+        </ul>
+        <p class="safety-note">Threat model and architecture are documented in the repo — not buried in a whitepaper.</p>
+      </div>
+    </section>
+
+    <!-- ============ CTA ============ -->
+    <section class="cta">
+      <h2>Give it a cheap wallet.<br>It'll earn its keep.</h2>
+      <p>Calibration-first. Testnet faucets, smallest-safe funds, and a simulation mode that's the default path — not an afterthought.</p>
+      <div class="install">
+        <code>npx fourier-agent init</code>
+        <button class="copy-btn" id="copyBtn2" aria-label="Copy install command">Copy</button>
+      </div>
+      <div class="cta-links">
+        <a class="btn" href="https://github.com/aabxtract/fourier" target="_blank" rel="noopener">Read the source</a>
+        <a class="btn btn-outline" href="https://fourier-view.vercel.app" target="_blank" rel="noopener">See the live view</a>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="brand">
+        <img class="brand-mark" src="logo.png?v=1" alt="Fourier">
+        <span class="brand-name">Fourier</span>
+      </div>
+      <p>Built for the Filecoin TLDR Builder Challenge Cycle 4 · MIT License</p>
+      <div class="footer-links">
+        <a href="https://github.com/aabxtract/fourier">GitHub</a>
+        <a href="https://www.npmjs.com/package/fourier-agent">npm</a>
+        <a href="https://fourier-view.vercel.app">Live view</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Copy-to-clipboard for the install command
+    for (const id of ['copyBtn', 'copyBtn2']) {
+      const btn = document.getElementById(id)
+      if (!btn) continue
+      btn.addEventListener('click', async () => {
+        await navigator.clipboard.writeText('npx fourier-agent init')
+        btn.textContent = 'Copied ✓'
+        setTimeout(() => { btn.textContent = 'Copy' }, 1600)
+      })
+    }
+  </script>
+</body>
+</html>
