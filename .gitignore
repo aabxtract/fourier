@@ -11,3 +11,4 @@ fourier.policy.json
 *.key
 *.pem
 wallet*.json
+*.tgz

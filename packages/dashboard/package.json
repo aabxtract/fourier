@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@fourier/agent": "*",
+    "fourier-agent": "*",
     "dotenv": "^16.4.7"
   },
   "devDependencies": {
