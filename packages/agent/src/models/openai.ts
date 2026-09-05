@@ -11,7 +11,7 @@ export class OpenAIAdapter implements ModelAdapter {
         },
         body: JSON.stringify({
           model: request.modelName || 'gpt-4o',
-          response_format: { type: 'json_object' },
+          ...(request.responseFormat === 'json' ? { response_format: { type: 'json_object' as const } } : {}),
           messages: [
             { role: 'system', content: request.systemPrompt },
             { role: 'user', content: request.userPrompt }

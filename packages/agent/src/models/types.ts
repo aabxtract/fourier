@@ -4,6 +4,12 @@ export interface ModelRequest {
   modelName: string
   apiKey?: string
   temperature?: number
+  /**
+   * 'json' — structured output mode (decision contracts).
+   * 'text' — freeform natural language (conversational chat).
+   * Default: text.
+   */
+  responseFormat?: 'json' | 'text'
 }
 
 export interface ModelResponse {

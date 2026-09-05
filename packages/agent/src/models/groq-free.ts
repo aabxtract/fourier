@@ -22,7 +22,7 @@ export class GroqFreeAdapter implements ModelAdapter {
         },
         body: JSON.stringify({
           model: modelName,
-          response_format: { type: 'json_object' },
+          ...(request.responseFormat === 'json' ? { response_format: { type: 'json_object' as const } } : {}),
           temperature: request.temperature ?? 0.3,
           max_tokens: 1024,
           messages: [

@@ -131,7 +131,8 @@ export class ConversationEngine {
         userPrompt: userMessage,
         modelName: this.config.model.model,
         apiKey,
-        temperature: 0.7
+        temperature: 0.7,
+        responseFormat: 'text'
       })
 
       // If this was a preference update, persist it

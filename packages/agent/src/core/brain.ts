@@ -66,7 +66,8 @@ export class Brain {
         systemPrompt,
         userPrompt,
         modelName: this.config.model.model,
-        apiKey
+        apiKey,
+        responseFormat: 'json'
       })
 
       const decision = parseDecision(response.raw, state)
@@ -117,7 +118,8 @@ export class Brain {
         systemPrompt,
         userPrompt,
         modelName: this.config.model.model,
-        apiKey
+        apiKey,
+        responseFormat: 'json'
       })
 
       const rawTrimmed = response.raw.replace(/```json|```/g, '').trim()
