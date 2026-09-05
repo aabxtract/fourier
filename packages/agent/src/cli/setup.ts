@@ -1,7 +1,9 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createInterface } from 'node:readline/promises'
 import { upsertEnvLine, readEnvValue } from '../core/env-store.js'
+import { DEFAULT_MODELS } from './use.js'
+import type { Provider } from '../types.js'
 
 /**
  * Interactive key setup: prompts for secrets and writes them straight into
@@ -139,6 +141,15 @@ async function confirm(rl: ReturnType<typeof createInterface>, question: string)
   return answer === 'y' || answer === 'yes'
 }
 
+/** Sniff the provider from well-known key prefixes (gsk_ = Groq, etc.). */
+function providerForKey(key: string): Provider | null {
+  const k = key.trim().toLowerCase()
+  if (k.startsWith('gsk_')) return 'groq'
+  if (k.startsWith('sk-ant-')) return 'claude'
+  if (k.startsWith('sk-')) return 'openai'
+  return null
+}
+
 /**
  * Full interactive setup flow. Safe to run multiple times: existing values
  * are kept unless the user explicitly overwrites them.
@@ -197,6 +208,26 @@ export async function setupCommand(): Promise<void> {
       if (modelKey) {
         upsertEnvLine(envPath, 'FOURIER_MODEL_API_KEY', modelKey)
         console.log(`AI key saved (${fingerprint(modelKey)}).`)
+
+        // Auto-configure the provider from the key prefix so the brain and
+        // the chat engine call the right API — a Groq key must never reach
+        // the Claude adapter.
+        const detected = providerForKey(modelKey)
+        const configPath = resolve(process.cwd(), 'fourier.config.json')
+        if (detected && existsSync(configPath)) {
+          try {
+            const cfg = JSON.parse(readFileSync(configPath, 'utf8'))
+            if (cfg.model?.provider !== detected) {
+              cfg.model = { provider: detected, model: DEFAULT_MODELS[detected] }
+              writeFileSync(configPath, JSON.stringify(cfg, null, 2) + '\n')
+              console.log(`Provider auto-configured: ${detected} (${DEFAULT_MODELS[detected]}) — key prefix detected.`)
+            }
+          } catch {
+            // config parse failure — leave it to `fourier use <provider>`
+          }
+        } else if (detected) {
+          console.log(`Heads-up: that looks like a ${detected} key. Run \`fourier init\` in this folder so the provider gets configured.`)
+        }
       } else {
         console.log('Skipped AI key — canned demo reasoning will be used.')
       }
