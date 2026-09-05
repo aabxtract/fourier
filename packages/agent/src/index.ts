@@ -9,7 +9,8 @@ import {
   demoCommand,
   statusCommand,
   stopCommand,
-  linkCommand
+  linkCommand,
+  setupCommand
 } from './cli/index.js'
 
 function usage(): never {
@@ -30,6 +31,7 @@ function usage(): never {
       '  fourier approve <token>                       (redeem single-use approval token)',
       '  fourier use <claude|openai|grok|gemini|groq>  (switch active AI model provider)',
       '  fourier link [--rotate|--show]                (access code for the online view)',
+      '  fourier setup                                 (interactive key setup -> .env)',
       ''
     ].join('\n')
   )
@@ -78,6 +80,9 @@ async function main() {
       break
     case 'link':
       await linkCommand(subargs)
+      break
+    case 'setup':
+      await setupCommand()
       break
     default:
       usage()

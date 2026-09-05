@@ -1,5 +1,6 @@
 import { existsSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { setupCommand } from './setup.js'
 
 export async function initCommand(options: { role?: 'standalone' | 'child' | 'treasury'; treasuryId?: string } = {}) {
   const root = process.cwd()
@@ -49,8 +50,17 @@ export async function initCommand(options: { role?: 'standalone' | 'child' | 'tr
   }
 
   console.log('\nFourier initialization complete!')
+
+  // Interactive terminals get the key-setup flow: the agent asks for the
+  // private key and writes .env directly — no manual file editing.
+  if (process.stdin.isTTY && process.stdout.isTTY) {
+    await setupCommand()
+    return
+  }
+
   console.log('Next steps:')
-  console.log('  1. Compile policy:   npx fourier policy compile policy.txt')
-  console.log('  2. Run simulation:   npx fourier simulate burn-spike')
-  console.log('  3. Start agent loop: npx fourier start')
+  console.log('  1. Configure secrets:  npx fourier setup')
+  console.log('  2. Compile policy:     npx fourier policy compile policy.txt')
+  console.log('  3. Run simulation:     npx fourier simulate burn-spike')
+  console.log('  4. Start agent loop:   npx fourier start')
 }

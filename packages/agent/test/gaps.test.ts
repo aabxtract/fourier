@@ -281,6 +281,34 @@ test('access code store generates, keeps, and rotates codes', async () => {
   rmSync(d, { recursive: true, force: true })
 })
 
+test('env upsert creates, updates, and preserves unrelated lines', async () => {
+  const d = dir()
+  const envPath = join(d, '.env')
+  const { upsertEnvLine, readEnvValue } = await import('../src/core/env-store.js')
+
+  // creates file + appends
+  upsertEnvLine(envPath, 'FOURIER_WALLET_PRIVATE_KEY', '0xabc')
+  assert.equal(readEnvValue(envPath, 'FOURIER_WALLET_PRIVATE_KEY'), '0xabc')
+
+  // appends a second key without clobbering the first
+  upsertEnvLine(envPath, 'FOURIER_MODEL_API_KEY', 'sk-test')
+  assert.equal(readEnvValue(envPath, 'FOURIER_MODEL_API_KEY'), 'sk-test')
+  assert.equal(readEnvValue(envPath, 'FOURIER_WALLET_PRIVATE_KEY'), '0xabc')
+
+  // replaces in place, keeps everything else
+  upsertEnvLine(envPath, 'FOURIER_WALLET_PRIVATE_KEY', '0xdef')
+  const content = await import('node:fs')
+  const text = content.readFileSync(envPath, 'utf8')
+  assert.equal((text.match(/FOURIER_WALLET_PRIVATE_KEY=/g) ?? []).length, 1)
+  assert.ok(text.includes('0xdef'))
+  assert.ok(text.includes('sk-test'))
+
+  // empty values read as null (treated as unset)
+  upsertEnvLine(envPath, 'FOURIER_MODEL_API_KEY', '')
+  assert.equal(readEnvValue(envPath, 'FOURIER_MODEL_API_KEY'), null)
+  rmSync(d, { recursive: true, force: true })
+})
+
 test('config accepts delegationPollMinutes and child role requirements stay enforced', () => {
   const parsed = parseConfig(makeConfig({ role: 'treasury', delegationPollMinutes: 5 }))
   assert.equal(parsed.delegationPollMinutes, 5)
