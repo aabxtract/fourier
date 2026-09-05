@@ -6,7 +6,10 @@
   <title>Fourier — storage budget agent for Filecoin Onchain Cloud</title>
   <meta name="description" content="Fourier watches your Filecoin Pay balance, forecasts storage runway, and tops up within the limits you set. The AI proposes. Deterministic code disposes.">
   <link rel="icon" type="image/png" href="logo.png?v=1">
-  <link rel="stylesheet" href="styles.css?v=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
 
@@ -89,62 +92,66 @@ Would execute deposit(...) <span class="t-dim">→ estimated runway ~33 days</sp
     </section>
 
     <!-- ============ HOW ============ -->
-    <section class="section" id="how">
-      <h2>Four steps, then it's out of your way</h2>
-      <div class="steps">
-        <div class="step">
-          <span class="step-n">1</span>
-          <h3>Teach it your rules</h3>
-          <p>"Warn me below 7 days. Below 3 days, top up at most 5 USDFC." English in, a strict versioned rulebook out — you review it before it's enforced.</p>
+    <div class="band">
+      <section class="section" id="how">
+        <h2>Four steps, then it's out of your way</h2>
+        <div class="steps">
+          <div class="step">
+            <span class="step-n">1</span>
+            <h3>Teach it your rules</h3>
+            <p>"Warn me below 7 days. Below 3 days, top up at most 5 USDFC." English in, a strict versioned rulebook out — you review it before it's enforced.</p>
+          </div>
+          <div class="step">
+            <span class="step-n">2</span>
+            <h3>Test-drive it</h3>
+            <p>Named scenarios — burn spikes, budget squeezes — run the full pipeline with a hard guarantee: no signer, no transaction, ever.</p>
+          </div>
+          <div class="step">
+            <span class="step-n">3</span>
+            <h3>Let it live</h3>
+            <p>Every 30 minutes: read the chain, check the rulebook, consult the AI, act within policy. Then it writes everything down.</p>
+          </div>
+          <div class="step">
+            <span class="step-n">4</span>
+            <h3>Check it anywhere</h3>
+            <p>A high-entropy access code — no login — unlocks a read-only live view on any device. Telegram pushes every decision the moment it happens.</p>
+          </div>
         </div>
-        <div class="step">
-          <span class="step-n">2</span>
-          <h3>Test-drive it</h3>
-          <p>Named scenarios — burn spikes, budget squeezes — run the full pipeline with a hard guarantee: no signer, no transaction, ever.</p>
-        </div>
-        <div class="step">
-          <span class="step-n">3</span>
-          <h3>Let it live</h3>
-          <p>Every 30 minutes: read the chain, check the rulebook, consult the AI, act within policy. Then it writes everything down.</p>
-        </div>
-        <div class="step">
-          <span class="step-n">4</span>
-          <h3>Check it anywhere</h3>
-          <p>A high-entropy access code — no login — unlocks a read-only live view on any device. Telegram pushes every decision the moment it happens.</p>
-        </div>
-      </div>
-    </section>
+      </section>
+    </div>
 
     <!-- ============ FEATURES ============ -->
-    <section class="section" id="features">
-      <h2>What's inside</h2>
-      <div class="features">
-        <div class="feature">
-          <h3>Deterministic guardrails</h3>
-          <p>Top-ups clamped to your cap. Malformed AI output becomes HOLD. Triage disabled by default. The rulebook is code, not a prompt.</p>
+    <div class="band band-alt">
+      <section class="section" id="features">
+        <h2>What's inside</h2>
+        <div class="features">
+          <div class="feature">
+            <h3>Deterministic guardrails</h3>
+            <p>Top-ups clamped to your cap. Malformed AI output becomes HOLD. Triage disabled by default. The rulebook is code, not a prompt.</p>
+          </div>
+          <div class="feature">
+            <h3>Five AI providers</h3>
+            <p>Claude, OpenAI, Gemini, Grok, or Groq — one decision contract across all of them. Switch with one command; the rails hold regardless.</p>
+          </div>
+          <div class="feature">
+            <h3>Learns from outcomes</h3>
+            <p>Every decision is graded against what happened next. The last ten outcomes ride along in every prompt, so timing and amounts adapt.</p>
+          </div>
+          <div class="feature">
+            <h3>Multi-agent treasuries</h3>
+            <p>Child agents file funding requests; a treasury agent evaluates solvency and pays via Filecoin Pay. Runs across machines, self-hosted.</p>
+          </div>
+          <div class="feature">
+            <h3>Zero-tx simulation</h3>
+            <p>Live onchain reads, named scenarios, and N-day historical replay — a full pipeline rehearsal that cannot touch your wallet.</p>
+          </div>
+          <div class="feature">
+            <h3>Approval tokens</h3>
+            <p>Dangerous actions gate behind single-use, 10-minute, tamper-checked tokens — redeemable from Telegram with <code>/approve</code>.</p>
+          </div>
         </div>
-        <div class="feature">
-          <h3>Five AI providers</h3>
-          <p>Claude, OpenAI, Gemini, Grok, or Groq — one decision contract across all of them. Switch with one command; the rails hold regardless.</p>
-        </div>
-        <div class="feature">
-          <h3>Learns from outcomes</h3>
-          <p>Every decision is graded against what happened next. The last ten outcomes ride along in every prompt, so timing and amounts adapt.</p>
-        </div>
-        <div class="feature">
-          <h3>Multi-agent treasuries</h3>
-          <p>Child agents file funding requests; a treasury agent evaluates solvency and pays via Filecoin Pay. Runs across machines, self-hosted.</p>
-        </div>
-        <div class="feature">
-          <h3>Zero-tx simulation</h3>
-          <p>Live onchain reads, named scenarios, and N-day historical replay — a full pipeline rehearsal that cannot touch your wallet.</p>
-        </div>
-        <div class="feature">
-          <h3>Approval tokens</h3>
-          <p>Dangerous actions gate behind single-use, 10-minute, tamper-checked tokens — redeemable from Telegram with <code>/approve</code>.</p>
-        </div>
-      </div>
-    </section>
+      </section>
+    </div>
 
     <!-- ============ SAFETY ============ -->
     <section class="safety" id="safety">

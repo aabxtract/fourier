@@ -17,7 +17,7 @@
   --red: #d64545;
   --radius: 16px;
   --radius-sm: 10px;
-  --font: "Inter", "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font: "Poppins", "Inter", "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
   --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
 }
 
@@ -25,10 +25,11 @@
 
 body {
   font-family: var(--font);
-  background: var(--bg);
+  background: #fbfbfa;
   color: var(--ink);
   font-size: 15px;
   line-height: 1.55;
+  padding-top: 86px;
 }
 
 h1, h2, h3 { letter-spacing: -0.02em; line-height: 1.12; }
@@ -39,10 +40,22 @@ code { font-family: var(--mono); font-size: 0.92em; }
 
 svg { width: 18px; height: 18px; }
 
-/* ---------- nav ---------- */
+/* ---------- floating nav ---------- */
 
-.nav { position: sticky; top: 0; z-index: 20; background: rgba(247, 247, 245, 0.85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
-.nav-inner { max-width: 1080px; margin: 0 auto; display: flex; align-items: center; gap: 24px; padding: 14px 20px; }
+.nav {
+  position: fixed; top: 14px; left: 0; right: 0; z-index: 20;
+  pointer-events: none;
+}
+.nav-inner {
+  pointer-events: auto;
+  max-width: 920px; margin: 0 auto;
+  display: flex; align-items: center; gap: 24px; padding: 10px 12px 10px 20px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: 0 8px 30px -12px rgba(25, 25, 25, 0.18);
+}
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand-mark { width: 28px; height: 28px; border-radius: 9px; background: #0a0a0a; padding: 3px; display: block; flex: none; }
 .brand-name { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
@@ -136,6 +149,11 @@ svg { width: 18px; height: 18px; }
 }
 
 /* ---------- sections ---------- */
+
+.band { background: #f0f0ee; border-block: 1px solid var(--line); }
+.band-alt { background: #ececea; }
+.band .section { padding-top: 60px; padding-bottom: 56px; }
+.band .section h2 { text-align: center; }
 
 .section { max-width: 1080px; margin: 0 auto; padding: 76px 20px 8px; }
 .section h2 { margin-bottom: 34px; }
