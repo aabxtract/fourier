@@ -58,25 +58,21 @@ Filecoin Account / Synapse SDK
 
 ## Quick Start
 
-### 1. Installation
+### 1. Install
 
-Requires **Node.js >= 18.0.0**.
+Requires **Node.js >= 18**. No cloning needed — the agent runs from anywhere:
 
 ```bash
-git clone https://github.com/your-org/fourier.git
-cd fourier
-npm install
-npm run build
-npm test
+npx fourier-agent init
 ```
+
+(Developers who want the dashboard, viewer, or to contribute: `git clone` this
+repo, then `npm install && npm run build` — the npm package ships the agent
+CLI only.)
 
 ### 2. Configure Environment
 
-Copy the environment template:
-
-```bash
-cp .env.example .env
-```
+Create a `.env` next to your `fourier.config.json` (or copy the repo's template):
 
 ```dotenv
 FOURIER_WALLET_PRIVATE_KEY=your_private_key_here
@@ -84,26 +80,25 @@ FOURIER_MODEL_API_KEY=your_anthropic_or_openai_api_key
 FOURIER_TELEGRAM_BOT_TOKEN=
 FOURIER_TELEGRAM_CHAT_ID=
 FOURIER_DISCORD_WEBHOOK_URL=
-FOURIER_DELEGATION_URL=
-FOURIER_DASHBOARD_TOKEN=
-FOURIER_SUPABASE_URL=
-FOURIER_SUPABASE_SERVICE_ROLE_KEY=
+FOURIER_DATABASE_URL=
+FOURIER_VIEW_URL=https://fourier-view.vercel.app
 ```
 
 **Data source honesty:** with `FOURIER_WALLET_PRIVATE_KEY` (or a `walletAddress` in config) set, the watcher reads live account state through the **Synapse SDK** (`@filoz/synapse-sdk`): payments-contract balances, lockup rate, runway in epochs, and dataset listing. Without any wallet configured, every observation is labeled `demo-fixture` in events and on the dashboard — it is never presented as live chain data, and no signer is constructed.
 
-### 3. Initialize & Author Policy
+### 3. Author Your Policy
 
-Initialize configuration and sample policy:
+Compile and review your storage policy (plain English in, versioned rulebook out):
 
 ```bash
-node packages/agent/dist/src/index.js init --role standalone
+fourier policy compile policy.txt
 ```
 
-Compile and review your storage policy:
+### 4. Test-drive, then run
 
 ```bash
-node packages/agent/dist/src/index.js policy compile policy.example.txt
+fourier simulate burn-spike     # the full pipeline, zero transactions
+fourier start                   # the autonomous agent loop
 ```
 
 ---
@@ -116,10 +111,10 @@ Fourier provides comprehensive simulation capabilities so every decision can be 
 
 ```bash
 # 1. Burn-Spike: Naive 9.8d vs 2.1d history-aware projection; 7.5 -> 5.0 USDFC clamp
-node packages/agent/dist/src/index.js simulate burn-spike
+fourier simulate burn-spike
 
 # 2. Budget-Squeeze: Low balance triggers ranked dataset triage gated by approval token
-node packages/agent/dist/src/index.js simulate budget-squeeze
+fourier simulate budget-squeeze
 ```
 
 ### Live Onchain Read Simulation
@@ -127,7 +122,7 @@ node packages/agent/dist/src/index.js simulate budget-squeeze
 Inspect your live Filecoin storage state without submitting any onchain transaction:
 
 ```bash
-node packages/agent/dist/src/index.js simulate
+fourier simulate
 ```
 
 ### Historical Event Replay
@@ -135,7 +130,7 @@ node packages/agent/dist/src/index.js simulate
 Replay past observations chronologically to inspect what Fourier would have decided:
 
 ```bash
-node packages/agent/dist/src/index.js simulate --days 7
+fourier simulate --days 7
 ```
 
 ---
@@ -149,7 +144,7 @@ Fourier supports hierarchical multi-agent storage architectures:
 
 ```bash
 # Initialize a child agent linked to a treasury
-node packages/agent/dist/src/index.js init --role child --treasuryId treasury-main
+fourier init --role child --treasuryId treasury-main
 ```
 
 **Cross-machine coordination (optional):** by default child and treasury share the local `.fourier/requests.jsonl` queue. To run them on different machines, point both at one dashboard host via `FOURIER_DELEGATION_URL=https://your-host` — the dashboard exposes `POST /api/requests` and `PATCH /api/requests/:id` (token-protected when `FOURIER_DASHBOARD_TOKEN` is set).
