@@ -272,9 +272,10 @@ export async function setupCommand(): Promise<void> {
     console.log(`Secrets stored in ${envPath} — gitignored, never uploaded.`)
     console.log('')
     console.log('Next steps:')
-    console.log('  1. fourier policy compile policy.txt')
-    console.log('  2. fourier simulate          (real onchain read, zero transactions)')
-    console.log('  3. fourier start             (the live agent loop)')
+    console.log('  Tip: run once for bare `fourier` commands:  npm i -g fourier-agent')
+    console.log('  1. npx fourier-agent policy compile policy.txt')
+    console.log('  2. npx fourier-agent simulate          (real onchain read, zero transactions)')
+    console.log('  3. npx fourier-agent start             (the live agent loop)')
     console.log('')
   } finally {
     rl.close()

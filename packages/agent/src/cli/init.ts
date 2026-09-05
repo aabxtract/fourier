@@ -59,8 +59,9 @@ export async function initCommand(options: { role?: 'standalone' | 'child' | 'tr
   }
 
   console.log('Next steps:')
-  console.log('  1. Configure secrets:  npx fourier setup')
-  console.log('  2. Compile policy:     npx fourier policy compile policy.txt')
-  console.log('  3. Run simulation:     npx fourier simulate burn-spike')
-  console.log('  4. Start agent loop:   npx fourier start')
+  console.log('  Tip: run once for bare `fourier` commands:  npm i -g fourier-agent')
+  console.log('  1. Configure secrets:  npx fourier-agent setup')
+  console.log('  2. Compile policy:     npx fourier-agent policy compile policy.txt')
+  console.log('  3. Run simulation:     npx fourier-agent simulate burn-spike')
+  console.log('  4. Start agent loop:   npx fourier-agent start')
 }
