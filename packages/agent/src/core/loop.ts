@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync, unlinkSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync, unlinkSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type {
   CompiledPolicy,
@@ -405,6 +405,10 @@ export async function runLoop(
 ): Promise<void> {
   const logger = new AgentLogger(config.agentId)
   const lockFile = resolve(dataDir, 'agent.lock')
+
+  // Fresh installations have no data directory yet — create it before the
+  // lock file (stores would create it later, but the lock is written first).
+  if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true })
 
   if (existsSync(lockFile)) {
     logger.warn(`Process lock file exists at ${lockFile}. Overriding stale lock.`)
