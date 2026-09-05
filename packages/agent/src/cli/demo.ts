@@ -55,7 +55,7 @@ export async function demoCommand() {
       network: 'calibration',
       role: 'standalone',
       treasuryAgentId: null,
-      model: { provider: 'groq', model: 'llama-3.1-8b-instant' },
+      model: { provider: 'groq', model: 'openai/gpt-oss-120b' },
       thresholds: { warningRunwayDays: 7, actionRunwayDays: 3, maxAutoTopUpUSDFC: 5 },
       actions: { topUpEnabled: true, triageEnabled: false, triageRequiresApproval: true },
       checkIntervalMinutes: 1

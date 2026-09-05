@@ -8,7 +8,7 @@ export const DEFAULT_MODELS: Record<Provider, string> = {
   openai: 'gpt-4o',
   gemini: 'gemini-1.5-pro',
   grok: 'grok-beta',
-  groq: 'llama-3.1-8b-instant'
+  groq: 'openai/gpt-oss-120b'
 }
 
 export async function useCommand(provider: string) {

@@ -1,14 +1,14 @@
 import type { ModelAdapter, ModelRequest, ModelResponse } from './types.js'
 
 /**
- * Groq Free adapter — uses the Groq API (OpenAI-compatible) with llama-3.1-8b-instant.
+ * Groq Free adapter — uses the Groq API (OpenAI-compatible) with openai/gpt-oss-120b.
  * Free tier, anyone can get a key at groq.com in under 30 seconds.
  */
 export class GroqFreeAdapter implements ModelAdapter {
   private readonly baseUrl = 'https://api.groq.com/openai/v1'
 
   async complete(request: ModelRequest): Promise<ModelResponse> {
-    const modelName = request.modelName || 'llama-3.1-8b-instant'
+    const modelName = request.modelName || 'openai/gpt-oss-120b'
 
     // Use FOURIER_GROQ_API_KEY if available, fall back to FOURIER_MODEL_API_KEY
     const apiKey = request.apiKey
@@ -70,7 +70,7 @@ export class GroqFreeConversationAdapter implements ModelAdapter {
   private readonly baseUrl = 'https://api.groq.com/openai/v1'
 
   async complete(request: ModelRequest): Promise<ModelResponse> {
-    const modelName = request.modelName || 'llama-3.1-8b-instant'
+    const modelName = request.modelName || 'openai/gpt-oss-120b'
     const apiKey = request.apiKey
 
     if (apiKey && !apiKey.startsWith('mock-')) {
