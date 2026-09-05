@@ -61,15 +61,17 @@ Filecoin Account / Synapse SDK
 
 ### 1. Install
 
-Requires **Node.js >= 18**. No cloning needed — the agent runs from anywhere:
+Requires **Node.js >= 18**. Global install — the agent becomes a single command:
 
 ```bash
-npx fourier-agent init
+npm install -g fourier-agent
+fourier init
 ```
 
-(Developers who want the dashboard, viewer, or to contribute: `git clone` this
-repo, then `npm install && npm run build` — the npm package ships the agent
-CLI only.)
+(Just want to kick the tires first? `npx fourier-agent init` runs it without
+installing. Developers who want the dashboard, viewer, or to contribute:
+`git clone` this repo, then `npm install && npm run build` — the npm package
+ships the agent CLI only.)
 
 ### 2. Configure Environment — automatically
 

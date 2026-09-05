@@ -42,9 +42,10 @@
         <p class="hero-rule">The AI proposes. Deterministic code disposes.</p>
 
         <div class="install" id="installCmd">
-          <code>npx fourier-agent init</code>
+          <code>npm install -g fourier-agent</code>
           <button class="copy-btn" id="copyBtn" aria-label="Copy install command">Copy</button>
         </div>
+        <p class="try-note">or try instantly: <code>npx fourier-agent init</code></p>
       </div>
 
       <div class="hero-demo" aria-hidden="true">
@@ -156,9 +157,10 @@
       <h2>Give it a cheap wallet.<br>It'll earn its keep.</h2>
       <p>Calibration-first. Testnet faucets, smallest-safe funds, and a simulation mode that's the default path — not an afterthought.</p>
       <div class="install">
-        <code>npx fourier-agent init</code>
+        <code>npm install -g fourier-agent</code>
         <button class="copy-btn" id="copyBtn2" aria-label="Copy install command">Copy</button>
       </div>
+      <p class="try-note">or try instantly: <code>npx fourier-agent init</code></p>
       <div class="cta-links">
         <a class="btn" href="https://github.com/aabxtract/fourier" target="_blank" rel="noopener">Read the source</a>
         <a class="btn btn-outline" href="https://fourier-view.vercel.app" target="_blank" rel="noopener">See the live view</a>
@@ -188,7 +190,7 @@
       const btn = document.getElementById(id)
       if (!btn) continue
       btn.addEventListener('click', async () => {
-        await navigator.clipboard.writeText('npx fourier-agent init')
+        await navigator.clipboard.writeText('npm install -g fourier-agent')
         btn.textContent = 'Copied ✓'
         setTimeout(() => { btn.textContent = 'Copy' }, 1600)
       })
