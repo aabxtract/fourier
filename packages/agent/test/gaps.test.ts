@@ -281,6 +281,18 @@ test('access code store generates, keeps, and rotates codes', async () => {
   rmSync(d, { recursive: true, force: true })
 })
 
+test('telegram chat id is parsed from the newest getUpdates entry', async () => {
+  const { parseChatIdFromUpdates } = await import('../src/cli/setup.js')
+  const updates = [
+    { update_id: 1, message: { chat: { id: 111111 } } },
+    { update_id: 2, message: { chat: { id: 222222 } } }
+  ]
+  assert.equal(parseChatIdFromUpdates(updates), 222222)
+  assert.equal(parseChatIdFromUpdates([]), null)
+  assert.equal(parseChatIdFromUpdates([{ unrelated: true }]), null)
+  assert.equal(parseChatIdFromUpdates(null), null)
+})
+
 test('env upsert creates, updates, and preserves unrelated lines', async () => {
   const d = dir()
   const envPath = join(d, '.env')

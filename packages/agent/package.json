@@ -1,6 +1,6 @@
 {
   "name": "fourier-agent",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "type": "module",
   "description": "Policy-constrained storage budget agent for Filecoin Onchain Cloud — AI proposes, deterministic code disposes",
   "license": "MIT",
