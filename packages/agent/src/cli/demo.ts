@@ -157,7 +157,7 @@ export async function demoCommand() {
 
       // Step 6: Show notification dispatch
       logStep('📡', C.magenta, 'NOTIFICATION', 'Broadcasting to configured channels...')
-      console.log(`     ${C.dim}Telegram, Discord, Webhook, Supabase${C.reset}`)
+      console.log(`     ${C.dim}Telegram, Discord, Webhook, Neon mirror${C.reset}`)
 
       // Step 7: Show event ID
       logStep('📊', C.blue, 'RECORDED', `Event ID: ${result.event.id}`)

@@ -8,7 +8,7 @@ operated by a single self-hosting operator on Filecoin Calibration or Mainnet.
 | Asset | Where it lives | Compromise impact |
 |---|---|---|
 | Wallet private key | `.env` (gitignored) only | Total fund loss — **never** enters config files, events, dashboard, logs, or Git |
-| Model / notification / Supabase credentials | `.env` only | Spend impersonation, message spoofing, mirror write access |
+| Model / notification / Neon database credentials | `.env` only | Spend impersonation, message spoofing, mirror write access |
 | USDFC funds | Filecoin Pay contract | Bounded by guardrail caps per decision, unbounded across time |
 | Decision/audit integrity | `.fourier/events.jsonl` | Silent history rewrite → cover for misbehavior |
 | Approval tokens | `.fourier/approvals.json` + chat | Unauthorized TRIAGE gating decision |
@@ -73,13 +73,15 @@ the client contains a public address at most.
 escaping is unconditional in `app.js`.
 
 ### T6 — Secret leakage
-**Threat:** keys committed to Git, logged, mirrored to Supabase, or embedded
-in the dashboard bundle.
+**Threat:** keys committed to Git, logged, mirrored to the cloud database, or
+embedded in the dashboard bundle.
 **Mitigation:** secrets only via `.env` (gitignored + wallet-file patterns in
-`.gitignore`); events carry hashes, never raw outputs with secrets;
-`syncEventOutbox` posts structured numeric/enum columns only; Supabase
-service-role key is used exclusively in the server-side agent process —
-the schema revokes anon/authenticated access and enables RLS.
+`.gitignore`) or typed through the masked `fourier setup` prompts; events
+carry hashes, never raw outputs with secrets; `syncEventOutbox` posts
+structured numeric/enum columns only; the Neon connection string is used
+exclusively in server-side processes (agent loop, viewer API) — never bundled
+for browsers. Online-view access codes are stored hashed, so a database leak
+does not leak usable codes.
 **Residual risk (known):** `store.ts` `redact()` is currently an identity
 function — event payloads contain no secret fields by construction, but a
 deliberate redaction pass is future work.
@@ -117,8 +119,8 @@ agent's evaluation and clamp.
 ### T10 — Audit-trail tampering
 **Threat:** local attacker rewrites `.fourier/events.jsonl` to hide actions.
 **Mitigation:** out of scope for v1 (operator owns the host); proposal hashes
-chain records to raw model outputs, and the optional Supabase mirror provides
-an append-only off-host copy under RLS.
+chain records to raw model outputs, and the optional Neon mirror provides an
+off-host copy keyed by server-side credentials.
 
 ## Dependency failure matrix
 
@@ -128,7 +130,7 @@ an append-only off-host copy under RLS.
 | AI provider | yes | bounded | HOLD event with error category | no |
 | Executor / RPC write | yes | **no auto-retry** | `failed` + reason, reconcile manually | no retry until reconciled |
 | Telegram / Discord / webhook | yes | bounded, jittered | delivery warning | decision unaffected |
-| Supabase mirror | yes | outbox | sync stays pending, `local-only` behavior intact | decision unaffected |
+| Neon mirror | yes | outbox | sync stays pending, `local-only` behavior intact | decision unaffected |
 | Coordination API (remote store) | yes | per-poll | delegation poll logs failure, next poll continues | no |
 
 ## Explicit non-goals (v1)

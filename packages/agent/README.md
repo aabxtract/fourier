@@ -10,6 +10,14 @@ clamps, gates, and executes it. Every decision is auditable.
 
 ```bash
 npx fourier-agent init
+```
+
+`init` then walks you through key setup interactively — wallet private key
+(masked input), AI provider key, Telegram bot token with **automatic chat-id
+discovery**, Discord webhook, and the Neon cloud mirror — writing everything
+to `.env`. Re-run anytime with `npx fourier-agent setup`.
+
+```bash
 npx fourier-agent policy compile policy.txt
 npx fourier-agent simulate burn-spike
 npx fourier-agent start

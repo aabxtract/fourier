@@ -46,7 +46,7 @@ flowchart TD
     end
 
     subgraph MIRROR["Optional cloud mirror"]
-        SB[("Supabase agent_events<br/>RLS · service key server-side only")]
+        SB[("Neon Postgres agent_events<br/>cloud mirror · server-side creds only")]
     end
 
     subgraph DASH["Operational Dashboard (node http)"]
@@ -113,6 +113,7 @@ never enter logs, events, the dashboard, or Git.
 | Config | `fourier.config.json` (gitignored) | Policy/thresholds — **no secrets** |
 | Secrets | `.env` (gitignored) | Keys only; never in config or dashboard |
 
-The Supabase mirror (`core/sync.ts`) is opt-in via env vars and only ever
-*copies* the audit log outward with idempotent upserts; the agent never reads
-decisions from it.
+The Neon mirror (`core/sync.ts`) is opt-in via `FOURIER_DATABASE_URL` and only
+ever *copies* data outward with idempotent upserts: the event outbox, memory
+outcomes, delegation-request statuses, the policy snapshot, and the hashed
+access code. The agent never reads decisions back from it.

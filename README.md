@@ -5,7 +5,7 @@
 
 Fourier monitors your Filecoin Onchain Cloud storage accounts, calculates storage runway trends, compiles user-authored natural language policies, consults selectable AI providers for structured recommendations, and enforces strict deterministic guardrails before anything can execute.
 
-**Self-hosted by default.** All state lives in local durable JSONL stores (`.fourier/`), the dashboard is a local Node server, and no cloud dependency is required. An optional Supabase mirror can be enabled per-environment without changing the agent's behavior.
+**Self-hosted by default.** All state lives in local durable JSONL stores (`.fourier/`), the dashboard is a local Node server, and no cloud dependency is required. An optional Neon Postgres mirror can be enabled per-environment without changing the agent's behavior.
 
 > Starting a fresh Filecoin Onchain Cloud project from zero? Use [`npx scaffold-foc`](https://www.npmjs.com/package/scaffold-foc) to scaffold a Next.js + Synapse SDK app with built-in setup checks, then drop Fourier in alongside it.
 
@@ -16,6 +16,7 @@ Fourier monitors your Filecoin Onchain Cloud storage accounts, calculates storag
 - **[Architecture](docs/architecture.md)** — full component diagram, decision pipeline, data ownership
 - **[Threat Model](docs/threat-model.md)** — assets, trust boundaries, 10 mapped threats, failure matrix, non-goals
 - **[Calibration Evidence](docs/calibration-evidence.md)** — live onchain deposit + treasury transfer proofs
+- **Landing page**: https://fourier-landing.vercel.app · **Live view**: https://fourier-view.vercel.app
 
 ---
 
@@ -31,7 +32,7 @@ Filecoin Account / Synapse SDK
     [ 2. Memory Context ] ◄── [ agent_memory ] ◄── Outcome Feedback (D_{k-1} vs S_k)
                │
                ▼
-      [ 3. AI Brain ] (Claude / OpenAI / Gemini / Grok)
+      [ 3. AI Brain ] (Claude / OpenAI / Gemini / Grok / Groq)
                │
                ▼
    [ 4. Decision Validation ] (Zod Schema Guard)
@@ -47,7 +48,7 @@ Filecoin Account / Synapse SDK
 [ 6. Filecoin Pay / Tx ] [ Single-Use Token /approve ]
       │
       ▼
-[ 7. Multi-Channel Alerts ] (Telegram / Discord / Supabase Event Outbox)
+[ 7. Multi-Channel Alerts ] (Telegram / Discord / Neon Cloud Mirror)
 ```
 
 > Detailed diagrams (including multi-agent delegation and the optional cloud
@@ -70,9 +71,19 @@ npx fourier-agent init
 repo, then `npm install && npm run build` — the npm package ships the agent
 CLI only.)
 
-### 2. Configure Environment
+### 2. Configure Environment — automatically
 
-Create a `.env` next to your `fourier.config.json` (or copy the repo's template):
+`init` walks you through everything interactively and writes `.env` for you —
+including **automatic Telegram chat-id discovery** (paste your bot token, send
+it any message, and the chat id is found and saved):
+
+```bash
+fourier setup          # re-run anytime; existing values are kept unless overwritten
+```
+
+Secrets it can store: wallet private key (masked input), AI provider key,
+Telegram bot token + chat id, Discord webhook, Neon connection string, and the
+online-view URL. Prefer manual editing? Create `.env` yourself:
 
 ```dotenv
 FOURIER_WALLET_PRIVATE_KEY=your_private_key_here
@@ -100,6 +111,23 @@ fourier policy compile policy.txt
 fourier simulate burn-spike     # the full pipeline, zero transactions
 fourier start                   # the autonomous agent loop
 ```
+
+---
+
+## CLI Reference
+
+| Command | What it does |
+|---|---|
+| `fourier init` | Create config + sample policy, then interactively store your keys in `.env` |
+| `fourier setup` | Re-run the interactive key setup (wallet, AI key, Telegram + auto chat-id, Discord, Neon) |
+| `fourier policy compile <file>` | Compile plain-English policy into the versioned rulebook |
+| `fourier simulate [scenario]` | Zero-tx pipeline run: named scenario, live onchain read, or `--days N` replay |
+| `fourier start [--simulate <scenario>]` | The autonomous agent loop (or a single simulated check) |
+| `fourier status` / `fourier stop` | Liveness from the lockfile + heartbeat / graceful shutdown |
+| `fourier use <provider>` | Switch AI provider: claude, openai, gemini, grok, groq |
+| `fourier link [--rotate/--show]` | Access code for the code-gated online view |
+| `fourier approve <token>` | Redeem a single-use TRIAGE approval token |
+| `fourier demo` | Scripted 5-cycle demo run |
 
 ---
 
@@ -151,11 +179,26 @@ fourier init --role child --treasuryId treasury-main
 
 ---
 
+## Telegram & Alerts
+
+Configure once with `fourier setup` — the bot token is validated against
+Telegram's API and your **chat id is discovered automatically** (you just send
+the bot any message). From then on:
+
+- Every decision pushes to Telegram (and Discord/webhook if configured) with
+  a link to your personal live view
+- Natural-language chat: ask about your account, request simulations
+- `/approve <token>` redeems TRIAGE approval tokens; `/link` re-sends your
+  access code and view link
+- Chat is pinned to your chat id — messages from anyone else are ignored
+
+---
+
 ## Agent Memory & Learning
 
-At the start of each check cycle $k$, Fourier queries the `agent_memory` table, compares previous decision $D_{k-1}$ against current state $S_k$, and updates the outcome (`SUCCESS`, `FAILED: rapid burn`, `STABILIZED`).
+At the start of each check cycle $k$, Fourier compares its previous decision $D_{k-1}$ against the current observed state $S_k$ and grades the outcome (`SUCCESS`, `FAILED: rapid burn`, `STABILIZED`) into the `agent_memory` store.
 
-The last 10 outcomes are injected directly into the AI prompt under **"Previous decisions and outcomes"** alongside an adaptive learning directive, allowing the agent to continuously adjust its strategy.
+The last 10 graded outcomes are injected directly into the AI prompt under **"Previous decisions and outcomes"** alongside an adaptive learning directive, allowing the agent to continuously adjust its strategy.
 
 ---
 
@@ -205,7 +248,7 @@ npm run view
 Fourier runs entirely on your machine:
 
 - **Durable local stores** in `.fourier/`: `events.jsonl` (audit trail), `memory.jsonl` (decision memory), `requests.jsonl` (delegation queue), `approvals.json` (single-use approval tokens), plus `agent.lock` and `heartbeat.json`.
-- **Optional Supabase mirror**: with `FOURIER_SUPABASE_URL` + `FOURIER_SUPABASE_SERVICE_ROLE_KEY` set, the local event outbox syncs to the `agent_events` table via REST (schema in `supabase/schema.sql`, RLS enabled). Rows are upserted by a deterministic id, so retries never duplicate. Without those vars, sync reports `local-only` and nothing leaves the machine.
+- **Optional Neon mirror**: with `FOURIER_DATABASE_URL` set, the agent mirrors events, memory outcomes, delegation requests, and its policy snapshot to a Neon Postgres database (`neon/schema.sql`). Rows are upserted by deterministic ids, so retries never duplicate. Without it, sync reports `local-only` and nothing leaves the machine.
 - **No required cloud services**: the agent, dashboard, and coordination endpoints all run from this repo.
 
 ## Non-Negotiable Safety Invariants
@@ -214,7 +257,7 @@ Fourier runs entirely on your machine:
 2. **Clamped Top-Ups**: Top-up amounts are capped to `maxAutoTopUpUSDFC`.
 3. **Simulation Guarantee**: Simulation mode NEVER accesses private keys or transmits transactions.
 4. **TRIAGE Gating**: Dataset triage is disabled by default and requires single-use expiring token approval (`/approve <token>`).
-5. **Fault Isolation**: Model timeouts, notification failures, and Supabase lag never crash the main polling loop.
+5. **Fault Isolation**: Model timeouts, notification failures, and cloud-mirror lag never crash the main polling loop.
 6. **No Secrets in Logs or UI**: Private keys and service role keys are never stored in client bundles or public rows.
 
 ---
