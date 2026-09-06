@@ -55,6 +55,11 @@ async function getClient(databaseUrl: string): Promise<pg.Client> {
   if (!clientPromise) {
     clientPromise = (async () => {
       const client = new pg.Client({ connectionString: databaseUrl, ssl: { rejectUnauthorized: false } })
+      // A dropped connection must NEVER crash the agent — recover on next sync.
+      client.on('error', err => {
+        console.warn(`[sync] Neon connection dropped (will reconnect next cycle): ${err instanceof Error ? err.message : String(err)}`)
+        clientPromise = null
+      })
       await client.connect()
       return client
     })()

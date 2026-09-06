@@ -44,16 +44,11 @@ export class ConversationEngine {
     }
 
     // `/link` — send the access code + hosted-view link (deterministic).
+    // Auto-creates the code on first use: no setup step should gate this.
     if (trimmed.toLowerCase().startsWith('/link')) {
       try {
-        const record = new AccessCodeStore('.fourier').load()
-        if (!record) {
-          return {
-            response: 'No access code yet — run `fourier link` on the machine running this agent to create one.',
-            updatedPreferences: false,
-            triggeredSimulation: false
-          }
-        }
+        const store = new AccessCodeStore('.fourier')
+        const record = store.load() ?? store.create(this.config.agentId)
         return {
           response: `🔑 Access code: ${record.rawCode}\n📊 Live view: ${viewLink(record.rawCode)}\n\nOpen the link (or enter the code) on any device for a read-only view of this agent — no login needed. Rotate anytime with \`fourier link --rotate\`.`,
           updatedPreferences: false,
